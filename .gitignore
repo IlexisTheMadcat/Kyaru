@@ -1,0 +1,6 @@
+*__pycache__*
+.vs
+Storage
+Workspace
+!Workspace/Files
+*ServiceAccountKey.json*
