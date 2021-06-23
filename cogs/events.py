@@ -524,10 +524,11 @@ class Events(Cog):
                 '1':(106, 293),
                 '2':(1103, 254),
                 '3':(447, 386),
-                '4':(1342, 451)
+                '4':(1342, 451),
+                '5':(353, 365)
             }
 
-            selection = str(randint(1,4))
+            selection = str(randint(1,5))
 
             background = Image.open(f"Workspace/Files/user_joined_modal{'_gif' if member.is_avatar_animated() else ''}_{selection}.png", 'r')
             img = img.resize((500,500))

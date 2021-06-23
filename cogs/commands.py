@@ -264,11 +264,12 @@ class Commands(Cog):
             '1':(106, 293),
             '2':(1103, 254),
             '3':(447, 386),
-            '4':(1342, 451)
+            '4':(1342, 451),
+            '5':(353, 365)
         }
 
-        if selection == "0" or selection not in ["1","2","3","4"]:
-            selection = str(randint(1,4))
+        if selection == "0" or selection not in ["1","2","3","4","5"]:
+            selection = str(randint(1,5))
 
         background = Image.open(f"Workspace/Files/user_joined_modal{'_gif' if member.is_avatar_animated() else ''}_{selection}.png", 'r')
         img = img.resize((500,500))
@@ -288,14 +289,6 @@ class Commands(Cog):
             text=f"UID: {member.id}{'; Animated avatars are not supported, sowwy!' if member.is_avatar_animated() else ''}"
         )
         start_the_timer = await channel.send(content=f"Welcome {member.mention}! Have fun and stay safe!", embed=emb)
-
-        self.bot.just_joined.append(member.id)
-        try:
-            member = await self.bot.wait_for("member_remove", timeout=120, check=lambda member2: member2.id == member.id)
-        except TimeoutError:
-            self.bot.just_joined.remove(member.id)
-        else:
-            await start_the_timer.delete()
         
     @command()
     async def nick(self, ctx, *, new_name=None):
