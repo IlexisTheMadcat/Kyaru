@@ -496,7 +496,6 @@ class Events(Cog):
             return
 
     # Catgirl Heaven welcome message
-    # --------------------------------------------------------------------------------------------------------------------------
     @Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == 740662779106689055 and not member.bot:
@@ -545,26 +544,29 @@ class Events(Cog):
                 title=f"{member.name} just joined the server!",
             ).set_image(url=image_url)
             emb.set_footer(
-                text=f"UID: {member.id}{'; Animated avatars are not supported, sowwy!' if member.is_avatar_animated() else ''}"
-            )
+                text=f"UID: {member.id}{'; Animated avatars are not supported, sowwy!' if member.is_avatar_animated() else ''}")
             start_the_timer = await channel.send(content=f"Welcome {member.mention}! Have fun and stay safe!", embed=emb)
 
             self.just_joined.append(member.id)
             try:
-                member = await self.bot.wait_for("member_remove", timeout=120, check=lambda member2: member2.id == member.id)
+                member = await self.bot.wait_for("member_remove", timeout=300, check=lambda member2: member2.id == member.id)
             except TimeoutError:
                 self.just_joined.remove(member.id)
             else:
-                await start_the_timer.delete()
+                history = await start_the_timer.channel.history(limit=5).flatten()
+                if start_the_timer.id == history[0].id:
+                    await start_the_timer.delete()
+                else:
+                    await channel.send(f"Looks like {member} left so soon. {self.bot.get_emoji(740980255581405206)}")
+                    self.just_joined.remove(member.id)
 
         elif member.guild.id == 740662779106689055 and member.bot:
             channel = self.bot.get_channel(741381152543211550)
             emb = Embed(
-                title=f"{member.name} has been added to the server.",
+                title=f"{member.mention} has been added to the server.",
             ).set_thumbnail(url=member.avatar_url)
             emb.set_footer(
-                text=f"UID: {member.id}"
-            )
+                text=f"UID: {member.id}")
             
             start_the_timer = await channel.send(embed=emb)
 
@@ -584,7 +586,7 @@ class Events(Cog):
         
         if not member.bot and member.guild.id == 740662779106689055:
             channel = self.bot.get_channel(741381152543211550)
-            await channel.send(content=f"`{member}` left the server. 😢")
+            await channel.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
             
         elif member.bot and member.guild.id == 740662779106689055:
             channel = self.bot.get_channel(741381152543211550)
