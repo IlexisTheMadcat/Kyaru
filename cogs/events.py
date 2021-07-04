@@ -462,10 +462,9 @@ class Events(Cog):
 
         if message.channel.category and \
             message.channel.category.id in \
-            [740663386500628570, 740663474568560671, 815382953370189865]:
+            [740663386500628570, 740663474568560671]:
             if str(payload.emoji) == "⬆" and \
-                (user.id == message.author.id or \
-                 str(user.id) in message.embeds[0].description):
+                str(user.id) in message.embeds[0].footer.text:
 
                 member = await message.guild.fetch_member(user.id)
                 await message.remove_reaction(payload.emoji, member)
