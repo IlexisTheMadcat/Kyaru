@@ -498,21 +498,25 @@ class Events(Cog):
     @Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == 740662779106689055 and not member.bot:
+            member = await self.bot.fetch_user(member.id)
+
             r = post(
                 "https://api.deepai.org/api/nsfw-detector",
                 data={'image': str(member.avatar_url)},
                 headers={'api-key': self.bot.auth["DeepAI_key"]})
 
             if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.5:
-                self.just_joined.append(member.id)
-
                 await member.send(embed=Embed(
                     color=0xFFBF00,
                     title="Warning",
                     description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                "Due to this, you've been automatically kicked following server rules. If you believe this was in error, please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation."
+                                "Due to this, you've been automatically kicked following server rules. If you believe this was in error, please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                "\n"
+                                "The below image is what was scanned for infringement."
+                ).set_image(url=str(pos.avatar_url)
                 ).set_footer(text="This test was done by a computer and may not be accurate."))
                 
+                self.just_joined.append(pos.id)
                 await member.kick()
                 return
             
@@ -548,7 +552,7 @@ class Events(Cog):
 
             self.just_joined.append(member.id)
             try:
-                member = await self.bot.wait_for("member_remove", timeout=300, check=lambda member2: member2.id == member.id)
+                member = await self.bot.wait_for("member_remove", timeout=600, check=lambda member2: member2.id == member.id)
             except TimeoutError:
                 self.just_joined.remove(member.id)
             else:
@@ -562,7 +566,7 @@ class Events(Cog):
         elif member.guild.id == 740662779106689055 and member.bot:
             channel = self.bot.get_channel(741381152543211550)
             emb = Embed(
-                title=f"{member.mention} has been added to the server.",
+                title=f"{member} has been added to the server.",
             ).set_thumbnail(url=member.avatar_url)
             emb.set_footer(
                 text=f"UID: {member.id}")
@@ -592,45 +596,60 @@ class Events(Cog):
             await channel.send(content=f"`{member}` was removed from the server.")
 
     @Cog.listener()
-    async def on_member_update(self, pre, post):
-        if post.id in self.bot.pause_member_update:
+    async def on_member_update(self, pre, pos):
+        if pos.id in self.bot.pause_member_update:
             return
         
-        if post.nick != pre.nick and post.guild.id == 740662779106689055:
-            entry = (await post.guild.audit_logs().flatten())[0]
-            if isinstance(entry.user, Member) and entry.user.id != post.id:
+        # Detect nickname change
+        if pos.nick != pre.nick and pos.guild.id == 740662779106689055:
+            entry = (await pos.guild.audit_logs().flatten())[0]
+            if isinstance(entry.user, Member) and entry.user.id != pos.id:
                 return
 
             general = await self.bot.fetch_channel(741381152543211550)
-            if post.nick != pre.nick and not post.permissions_in(general).manage_nicknames and not post.bot:
+            if pos.nick != pre.nick and not pos.permissions_in(general).manage_nicknames and not pos.bot:
                 
-                self.bot.pause_member_update.append(post.id)
-                await post.edit(nick=pre.nick)
-                self.bot.pause_member_update.remove(post.id)
+                self.bot.pause_member_update.append(pos.id)
+                await pos.edit(nick=pre.nick)
+                self.bot.pause_member_update.remove(pos.id)
 
-                await post.send(embed=Embed(
+                await pos.send(embed=Embed(
                     color=0xFFBF00,
                     title="Warning",
                     description="I understand you want to change your nickname in Neko Heaven, however nickname changes are now enforced by command.\n"
                                 "If you want to change your nickname, please run `k!nick <new nick>` in <#740671751293501592>.\n"))
+    
+    @Cog.listener()
+    async def on_user_update(self, pre, pos):
+        if pos.id in self.bot.pause_member_update:
+            return
+        
+        # Detect avatar change and scan for NSFW
+        if str(pos.avatar_url) and str(pos.avatar_url) != str(pre.avatar_url):
+            guild = self.bot.get_guild(740662779106689055)
+            member = guild.get_member(pos.id)
 
-        if post.avatar and post.avatar != pre.avatar:
+            if not member:
+                return
+
             r = post(
                 "https://api.deepai.org/api/nsfw-detector",
-                data={'image': str(post.avatar_url)},
+                data={'image': str(pos.avatar_url)},
                 headers={'api-key': self.bot.auth["DeepAI_key"]})
             
             if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.5:
-                self.just_joined.append(post.id)
-
-                await post.send(embed=Embed(
+                await member.send(embed=Embed(
                     color=0xFFBF00,
                     title="Warning",
                     description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                "Due to this, you've been automatically kicked following server rules. If you believe this was in error, please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation."
+                                "Due to this, you've been automatically kicked following server rules. If you believe this was in error, please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                "\n"
+                                "The below image is what was scanned for infringement."
+                ).set_image(url=str(pos.avatar_url)
                 ).set_footer(text="This test was done by a computer and may not be accurate."))
                 
-                await post.kick()
+                self.just_joined.append(pos.id)
+                await member.kick()
                 return
 
     # Catgirl Heaven server icon changes
