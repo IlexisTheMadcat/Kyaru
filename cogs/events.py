@@ -552,7 +552,9 @@ class Events(Cog):
 
             self.just_joined.append(member.id)
             try:
-                member = await self.bot.wait_for("member_remove", timeout=600, check=lambda member2: member2.id == member.id)
+                member = await self.bot.wait_for("member_remove", timeout=600, 
+                    check=lambda left_member: left_member.id == member.id)
+
             except TimeoutError:
                 self.just_joined.remove(member.id)
             else:
@@ -560,8 +562,9 @@ class Events(Cog):
                 if start_the_timer.id == history[0].id:
                     await start_the_timer.delete()
                 else:
-                    await channel.send(f"Looks like {member} left so soon. {self.bot.get_emoji(740980255581405206)}")
-                    self.just_joined.remove(member.id)
+                    await channel.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
+                
+                self.just_joined.remove(member.id)
 
         elif member.guild.id == 740662779106689055 and member.bot:
             channel = self.bot.get_channel(741381152543211550)
