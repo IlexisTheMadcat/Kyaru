@@ -118,7 +118,8 @@ class Commands(Cog):
             return
     
     @command(aliases=["nsfw"])
-    @has_permissions(send_messages=True, embed_links=True)
+    @has_permissions(attach_files=True, embed_links=True)
+    @bot_has_permissions(send_messages=True, embed_links=True)
     async def detect_nsfw(self, ctx, url=None):
         if ctx.message.attachments:
             if len(ctx.message.attachments) > 1:
@@ -163,7 +164,8 @@ class Commands(Cog):
             return
 
     @command(aliases=["scan", "sn"])
-    @has_permissions(send_messages=True, embed_links=True)
+    @has_permissions(attach_files=True)
+    @bot_has_permissions(send_messages=True, embed_links=True)
     async def scan_nsfw(self, ctx, url=None):
         if ctx.message.attachments:
             if len(ctx.message.attachments) > 1:
