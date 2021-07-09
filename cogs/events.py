@@ -464,6 +464,7 @@ class Events(Cog):
             message.channel.category.id in \
             [740663386500628570, 740663474568560671]:
             if str(payload.emoji) == "⬆" and \
+                message.embeds[0].footer.text and \
                 str(user.id) in message.embeds[0].footer.text:
 
                 member = await message.guild.fetch_member(user.id)
