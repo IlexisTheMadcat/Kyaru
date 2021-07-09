@@ -8,7 +8,7 @@ from copy import deepcopy
 
 from nudenet import NudeDetector
 from PIL import Image, ImageDraw
-from discord import Member, File
+from discord import Member, File, utils
 from discord.errors import NotFound
 from discord.ext.commands import cooldown, BucketType, is_owner
 from discord.ext.commands.cog import Cog
@@ -345,6 +345,7 @@ class Commands(Cog):
                 await ctx.author.edit(nick=new_name)
                 self.bot.pause_member_update.remove(ctx.author.id)
                 
+                emb.title = f"{ctx.author} ({ctx.author.id}) **(Approved)**"
                 emb.set_footer(text=f"Approved by {u} ({u.id})")
                 await control.edit(embed=emb)
                 
@@ -353,12 +354,13 @@ class Commands(Cog):
                 return
             
             elif str(r.emoji) == "❌":
+                emb.title = f"{ctx.author} ({ctx.author.id}) **(Rejected)**"
                 emb.set_footer(text=f"Rejected by {u} ({u.id})")
                 await control.edit(embed=emb)
-                inq = await requests.send("[10s] Short reason?")
+                inq = await requests.send("[30s] Short reason?")
 
                 try:
-                    m = await self.bot.wait_for("message", timeout=10,
+                    m = await self.bot.wait_for("message", timeout=30,
                         check=lambda m: m.author.permissions_in(requests).manage_nicknames and \
                         m.author.id==u.id and \
                         m.channel.id==control.channel.id)
