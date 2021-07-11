@@ -159,8 +159,15 @@ async def on_ready():
         try:
             bot.load_extension(f"cogs.{cog}")
             print(f"| Loaded initial cog {cog}")
+        except ExtensionAlreadyLoaded:
+            continue
+        
         except Exception as e:
-            print(f"| Failed to load extension {cog}\n|   {type(e.original).__name__}: {e.original}")
+            if hasattr(error, "original"):
+                print(f"| Failed to load extension {cog}\n|   {type(e.original).__name__}: {e.original}")
+            else:
+                print(f"| Failed to load extension {cog}\n|   {type(e).__name__}: {e}")
+            
             error = exc_info()
             if error:
                 await bot.errorlog.send(error, event="Load Initial Cog")

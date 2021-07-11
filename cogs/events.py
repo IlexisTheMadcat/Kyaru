@@ -910,9 +910,9 @@ class Events(Cog):
                 # target the exception indirectly.
                 if not self.bot.config["debug_mode"]:
                     try:
-                        try:
+                        if hasattr(error, "original"):
                             raise error.original
-                        except AttributeError:
+                        else:
                             raise error
                     except Exception:
                         error = exc_info()
