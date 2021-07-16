@@ -328,7 +328,7 @@ class Commands(Cog):
         await control.add_reaction("❌")
 
         try:
-            r, u = await self.bot.wait_for("reaction_add", timeout=60,
+            r, u = await self.bot.wait_for("reaction_add", timeout=300,
                 check=lambda r,u: u.permissions_in(requests).manage_nicknames and \
                     r.message.id==control.id and not \
                     u.bot and \
