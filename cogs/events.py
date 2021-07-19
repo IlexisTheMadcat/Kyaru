@@ -535,19 +535,20 @@ class Events(Cog):
                     emb.set_footer(text="User was kicked automatically.")
                     await control.edit(embed=emb)
 
-                    await member.send(embed=Embed(
-                        color=0xFFBF00,
-                        title="Warning",
-                        description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                    "\n"
-                                    "❌No mod was available to declare the safety of your profile picture. I cannot accept the risk of letting you stay for now.\n"
-                                    "\n"
-                                    "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
-                                    "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                    "\n"
-                                    "The below image is what was scanned for infringement."
-                        ).set_image(url=str(user.avatar_url)
-                        ).set_footer(text="This test was done by a computer and may not be accurate."))
+                    with suppress(Forbidden):
+                        await member.send(embed=Embed(
+                            color=0xFFBF00,
+                            title="Warning",
+                            description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                        "\n"
+                                        "❌No mod was available to declare the safety of your profile picture. I cannot accept the risk of letting you stay for now.\n"
+                                        "\n"
+                                        "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                        "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                        "\n"
+                                        "The below image is what was scanned for infringement."
+                            ).set_image(url=str(user.avatar_url)
+                            ).set_footer(text="This test was done by a computer and may not be accurate."))
         
                 else:
                     if str(r.emoji) == "✅":
@@ -575,19 +576,21 @@ class Events(Cog):
                             await m.delete()
                 
                         await inq.delete()
-                        await member.send(embed=Embed(
-                            color=0xFFBF00,
-                            title="Warning",
-                            description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                        f"\n"
-                                        f"{reason}\n"
-                                        f"\n"
-                                        "Due to this, you've been soft-banned from Neko Heaven following server rules. If you believe this was in error, "
-                                        f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                        f"\n"
-                                        f"The below image is what was scanned for infringement."
-                            ).set_image(url=str(user.avatar_url)
-                            ).set_footer(text="This test was done by a computer and may not be accurate."))
+
+                        with suppress(Forbidden):
+                            await member.send(embed=Embed(
+                                color=0xFFBF00,
+                                title="Warning",
+                                description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                            f"\n"
+                                            f"{reason}\n"
+                                            f"\n"
+                                            "Due to this, you've been soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                            f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                            f"\n"
+                                            f"The below image is what was scanned for infringement."
+                                ).set_image(url=str(user.avatar_url)
+                                ).set_footer(text="This test was done by a computer and may not be accurate."))
 
                         self.just_joined.append(member.id)
                         await guild.ban(member)
