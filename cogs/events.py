@@ -56,33 +56,46 @@ class Events(Cog):
             self.bot.inactive = 0
             return
 
+        # Upload images only in these channels
+        if msg.guild and msg.channel.id in \
+            [866172671544524830, 865857091246751775]:
+            if not msg.attachments:
+                find_url = findall(r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""", msg.content)
+                if find_url:
+                    if len(find_url) > 1:
+                        await msg.delete()
+                        await msg.channel.send(content=msg.author.mention, embed=Embed(
+                            title="One Image URL",
+                            description="While you can attach as many images you want here, please only send a link to ONE.",
+                        ), delete_after=5)
+
+                    elif len(find_url) == 1:
+                        if not find_url[0].endswith(("jpg", "jpeg", "png", "gif")):
+                            print(find_url)
+                            await msg.delete()
+                            await msg.channel.send(content=msg.author.mention, embed=Embed(
+                                title="Extension Not Allowed",
+                                description="URLs must end in the following: [jpg, jpeg, png, gif]",
+                            ), delete_after=5)
+                else:
+                    await msg.delete()
+                    await msg.channel.send(content=msg.author.mention, embed=Embed(
+                        title="Images only",
+                        description="You can only upload images in this channel.\n"
+                                    "You can comment on images by sending its **message** URL in <#742571100009136148>"
+                        ), delete_after=5)
+
         # Upscale media uploads in these categories
         if msg.guild and msg.channel.category and msg.channel.category.id in \
             [740663474568560671, 740663386500628570, 815382953370189865]:
-            if 741431440490627234 in [r.id for r in msg.author.roles]:
-                await msg.delete()
-                await msg.channel.send(
-                    content=msg.author.mention,
-                    embed=Embed(
-                        title="Muted!", 
-                        description="You are currently muted. You cannot upload here at this time.\n",
-                        color=0x32d17f),
-                    delete_after=10)
-                
-                return
-            
             if not msg.attachments:
-                await msg.delete()
-                await msg.channel.send(
-                    content=msg.author.mention,
-                    embed=Embed(
-                        title="Media", 
-                        description="Please send your plain text message in <#742571100009136148>.\n"
-                                    "If you sent an image URL, you must **attach** files.",
-                        color=0x32d17f),
-                    delete_after=10)
+                await msg.channel.send(content=msg.author.mention, embed=Embed(
+                    title="Images only",
+                    description="You can only upload images in this channel.\n"
+                                "You can comment on images by sending its **message** URL in <#742571100009136148>"
+                    ), delete_after=5)
 
-            elif len(msg.attachments) > 1:
+            if len(msg.attachments) > 1:
                 await msg.delete()
                 await msg.channel.send(
                     content=msg.author.mention,
