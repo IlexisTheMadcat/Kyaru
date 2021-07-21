@@ -135,7 +135,9 @@ class Events(Cog):
                 # Check image size due to Discord upload limitations.
                 # Upscale will not be used in this case as the file will most likely be larger.
                 async def file_too_large_prompt():
-                    await msg.delete()
+                    with suppress(NotFound):
+                        await msg.delete()
+
                     await conf.edit(content=msg.author.mention, embed=Embed(
                         color=0xff0000,
                         description="Please upload your image in [this channel](https://discord.com/channels/740662779106689055/789190968267636768), "
@@ -214,7 +216,9 @@ class Events(Cog):
                             try:
                                 result = udownload(r.json()["output_url"])
                             except KeyError:
-                                await msg.delete()
+                                with suppress(NotFound):
+                                    await msg.delete()
+
                                 buffer_target = self.bot.get_channel(789198608175202394)
                                 buffer_msg = await buffer_target.send(file=dcfileobj)
                                 await conf.edit(content="", embed=Embed(color=0x32d17f,
@@ -247,10 +251,13 @@ class Events(Cog):
                         await file_too_large_prompt()
                         return
                     else:
-                        await msg.delete()
+                        with suppress(NotFound):
+                            await msg.delete()
+
                         raise e
 
-                await msg.delete()
+                with suppress(NotFound):
+                    await msg.delete()
 
                 emb = Embed(
                     color=0x32d17f, 
@@ -357,7 +364,8 @@ class Events(Cog):
                     await sleep(5)
                     await msg.remove_reaction("❌", msg.guild.me)
                 else:
-                    await msg.delete()
+                    with suppress(NotFound):
+                        await msg.delete()
                 
                 await conf.delete()
 
@@ -369,7 +377,9 @@ class Events(Cog):
                 return
             
             if not msg.attachments:
-                await msg.delete()
+                with suppress(NotFound):
+                    await msg.delete()
+
                 await msg.channel.send(
                     content=msg.author.mention,
                     embed=Embed(
