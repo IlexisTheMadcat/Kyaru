@@ -668,7 +668,7 @@ class Events(Cog):
                 await control.add_reaction("❌")
 
                 try:
-                    r, u = await self.bot.wait_for("reaction_add", timeout=300, 
+                    r, u = await self.bot.wait_for("reaction_add", timeout=60*15, 
                         check=lambda r,u: u.permissions_in(pfps).kick_members and \
                         r.message.id==control.id and not \
                         u.bot and \
@@ -790,11 +790,10 @@ class Events(Cog):
             channel = self.bot.get_channel(741381152543211550)
             emb = Embed(
                 title=f"{member} has been added to the server.",
-            ).set_thumbnail(url=member.avatar_url)
-            emb.set_footer(
-                text=f"UID: {member.id}")
+            ).set_image(url=member.avatar_url)
+            emb.set_footer(text=f"UID: {member.id}")
             
-            start_the_timer = await channel.send(embed=emb)
+            start_the_timer = await channel.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", embed=emb)
 
             self.just_joined.append(member.id)
             try:
@@ -876,7 +875,7 @@ class Events(Cog):
                 await control.add_reaction("❌")
 
                 try:
-                    r, u = await self.bot.wait_for("reaction_add", timeout=300, 
+                    r, u = await self.bot.wait_for("reaction_add", timeout=60*15, 
                         check=lambda r,u: u.permissions_in(pfps).kick_members and \
                         r.message.id==control.id and not \
                         u.bot and \
