@@ -1,10 +1,10 @@
 # IMPORTS
 import os
+import re
 from sys import exc_info
 from requests import post
 from random import randint
 from io import BytesIO
-from re import findall
 from asyncio import TimeoutError
 from contextlib import suppress
 from asyncio import sleep
@@ -60,13 +60,13 @@ class Events(Cog):
         if msg.guild and msg.channel.id in \
             [866172671544524830, 865857091246751775]:
             if not msg.attachments:
-                find_url = findall(r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""", msg.content)
+                find_url = re.findall(r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""", msg.content)
                 if find_url:
                     if len(find_url) > 1:
                         await msg.delete()
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
                             title="One Image URL",
-                            description="While you can attach as many images you want here, please only send a link to ONE.",
+                            description="While you can attach as many images you want here, please only send a link to one at a time.",
                         ), delete_after=5)
 
                     elif len(find_url) == 1:
@@ -109,7 +109,11 @@ class Events(Cog):
                 await msg.channel.set_permissions(msg.author, send_messages=False)
                 has_upscaled = False
 
-                conf = await msg.channel.send(f"<a:loading:813237675553062954> {msg.author.mention} Please wait...")
+                conf = await msg.channel.send(
+                    embed=Embed(
+                        title="Upscaling For Quality",
+                        description=f"{self.bot.get_emoji(813237675553062954)} {msg.author.mention} Please wait..."))
+                
                 attach = msg.attachments[0]
 
                 try:
@@ -140,9 +144,9 @@ class Events(Cog):
 
                     await conf.edit(content=msg.author.mention, embed=Embed(
                         color=0xff0000,
-                        description="Please upload your image in [this channel](https://discord.com/channels/740662779106689055/789190968267636768), "
-                                    "it is too large for me to send!\n"
-                                    "<a:loading:813237675553062954> Waiting... (120s)"))
+                        description=f"Please upload your image in [this channel](https://discord.com/channels/740662779106689055/789190968267636768), "
+                                    f"it is too large for me to send!\n"
+                                    f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
                     
                     buffer_target = self.bot.get_channel(789190968267636768)
                     await buffer_target.set_permissions(msg.author, read_messages=True)
@@ -277,7 +281,7 @@ class Events(Cog):
         
         # Search for message links and reformat.
         new_content = deepcopy(msg.content)
-        link_findings = findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", new_content)
+        link_findings = re.findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", new_content)
         if len(link_findings) > 5:
             link_findings = []
         if link_findings:
@@ -300,10 +304,10 @@ class Events(Cog):
                     await msg.remove_reaction("📩", self.bot.user)
                     return
                 else:
-                    conf = await msg.channel.send("<a:loading:813237675553062954> Loading...")                    
+                    conf = await msg.channel.send(f"{self.bot.get_emoji(813237675553062954)} Loading...")                    
             
             elif pass_conf:
-                conf = await msg.channel.send("<a:loading:813237675553062954> Loading...")
+                conf = await msg.channel.send(f"{self.bot.get_emoji(813237675553062954)} Loading...")
                 
             link_jumps = list()
 
@@ -469,7 +473,7 @@ class Events(Cog):
                             msg.channel.id,
                             msg.message.id)
     
-    # Check user upvotes on their own posts.
+    # Post actions
     @Cog.listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
@@ -486,6 +490,7 @@ class Events(Cog):
         if message.channel.category and \
             message.channel.category.id in \
             [740663386500628570, 740663474568560671]:
+
             if str(payload.emoji) == "⬆" and \
                 message.embeds[0].footer.text and \
                 str(user.id) in message.embeds[0].footer.text:
@@ -515,10 +520,125 @@ class Events(Cog):
                             description="You can't remove this post.",
                             color=0x32d17f),
                         delete_after=5)
-            
+
+            if str(payload.emoji) == "🔀":
+                bot_spam = self.bot.get_channel(742481946030112779)
+                if not bot_spam: bot_spam = await self.bot.fetch_channel(742481946030112779)
+                
+                if not member.permissions_in(channel).manage_messages:
+                    await bot_spam.send(
+                        content=user.mention,
+                        embed=Embed(
+                            title="Cannot Move Post", 
+                            description=f"Only moderators can move posts.",
+                            color=0x32d17f
+                        ), delete_after=5)
+
+                copied_embed = deepcopy(message.embeds[0])
+                edit = await bot_spam.send(
+                    member.mention,
+                    embed=Embed(
+                        title="Moving Post", 
+                        description=f"{self.bot.get_emoji(813237675553062954)} Moderator, please mention the channel\n"
+                                    f"you want this post to be moved into.\n"
+                                    f"\n"
+                                    f"{copied_embed.description}",
+                        color=0x32d17f
+                    ).set_image(url=copied_embed.image.url
+                    ).set_footer(text=copied_embed.footer.text+" (Type `-cancel` to cancel)"))
+                    
+                
+                while True:
+                    try:
+                        msg = await self.bot.wait_for("message", timeout=60,
+                            check=lambda m: m.channel.id==bot_spam.id and m.author.id==member.id)
+                    
+                    except TimeoutError:
+                        await message.remove_reaction(payload.emoji, member)
+                        await edit.edit(
+                            content=member.mention,
+                            embed=Embed(
+                                title="Moving Post", 
+                                description=f":x: Timed out.",
+                                color=0x32d17f
+                            ).set_footer(text=Embed.Empty))
+                
+                        break
+
+                    else:
+                        if msg.content == "-cancel":
+                            await message.remove_reaction(payload.emoji, member)
+                            await msg.delete()
+                            await edit.delete()
+
+                            break
+
+                        channel_mention_search = re.search(r"<#[0-9]{18}>", msg.content)
+                        if not channel_mention_search:
+                            await bot_spam.send(
+                                content=user.mention,
+                                embed=Embed(
+                                    description=f":x: No channel mentioned. Please try again.",
+                                    color=0x32d17f
+                                ), delete_after=5)
+
+                            continue
+
+                        channel_mention = channel_mention_search.group()
+                        new_channel_id = int(channel_mention.strip("<#>"))
+
+                        new_channel = self.bot.get_channel(new_channel_id)
+                        if not new_channel: 
+                            try: await self.bot.fetch_channel(new_channel_id)
+                            except NotFound: 
+                                await bot_spam.send(
+                                    content=user.mention,
+                                    embed=Embed(
+                                        description=f":x: Invalid channel mentioned. Please try again.",
+                                        color=0x32d17f
+                                    ), delete_after=5)
+
+                            continue
+
+                        if new_channel.category and \
+                            not new_channel.category.id in [740663386500628570, 740663474568560671]:
+                            await bot_spam.send(
+                                content=user.mention,
+                                embed=Embed(
+                                    description=f":x: No Neko Heaven media channel mentioned. Please try again.",
+                                    color=0x32d17f
+                                ), delete_after=5)
+
+                            continue
+
+                        if new_channel.id == channel.id: 
+                            await bot_spam.send(
+                                content=user.mention,
+                                embed=Embed(
+                                    description=f":x: The source and destination are the same. Please try again.",
+                                    color=0x32d17f
+                                ), delete_after=5)
+
+                            continue
+                        
+                        await message.delete()
+                        post = await new_channel.send(embed=copied_embed)
+                        await post.add_reaction("⬆️")
+
+                        await edit.edit(
+                            content=member.mention,
+                            embed=Embed(
+                                title="Moved Post", 
+                                description=f":white_check_mark: Moderator, please mention the channel you want this post to be moved into.",
+                                color=0x32d17f
+                            ).set_footer(text="I asked here because I would react differently if you responded in that channel."))
+                        await bot_spam.send(embed=Embed(description=f"Done. Moved post from {channel.mention} to {new_channel.mention}."))
+
+                        break
+                
             return
 
-    # Catgirl Heaven welcome message
+    # Neko Heaven welcome message
     @Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == 740662779106689055 and not member.bot:
