@@ -216,6 +216,7 @@ class Events(Cog):
                     # # Image will look distorted.
                     if ((width > height and height < 300) or \
                         (height >= width and width < 300)):
+                        await msg.delete()
                         await conf.edit(
                             embed=Embed(
                                 color=0xff0000,
