@@ -219,9 +219,10 @@ class Events(Cog):
                         await conf.edit(
                             embed=Embed(
                                 color=0xff0000,
-                                description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
-                                            f"Error details: `Image is too small. Image will look distorted.`"
+                                description=f":x: That image is too small! Please use [Google Images](https://images.google.com/) to check for a larger resolution."
                             ), delete_after=5)
+
+                        return
                     
                     # If smaller dimension is greater than 1000px, skip upscaling
                     if ((width > height and height > 1000) or \
@@ -240,7 +241,7 @@ class Events(Cog):
                         retries = 3
                         # Loop until image is optimal size or exceeded tries
                         while retries >= 0:
-                            """
+
                             # Upload image
                             async with aiohttp.ClientSession() as cs:
                                 data = aiohttp.FormData()
@@ -255,8 +256,8 @@ class Events(Cog):
                                 )
 
                                 r.json = await r.json()
-                            """
 
+                            """
                             # Upload image
                             r = post(
                                 "https://api.deepai.org/api/waifu2x",
@@ -265,6 +266,7 @@ class Events(Cog):
                             )
 
                             r.json = r.json()
+                            """
                             
                             try:
                                 result = udownload(r.json["output_url"])
@@ -276,7 +278,7 @@ class Events(Cog):
                                     embed=Embed(
                                         color=0xff0000,
                                         description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
-                                                    f"Error details: `{r.json['err']}`"
+                                                    f"`{r.json['err']}`"
                                     ), delete_after=5)
 
                                 await msg.channel.edit(overwrites=msg.channel.category.overwrites)
@@ -309,7 +311,7 @@ class Events(Cog):
                                 embed=Embed(
                                     color=0xff0000,
                                     description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
-                                                f"Error details: `Retries exhausted.`"
+                                                f"Error details: `Retries exhausted. Will not continue.`"
                                 ), delete_after=5)
                             
                             return
@@ -403,7 +405,9 @@ class Events(Cog):
                     # https: / / discord.com / channels / {GID} / {CID} / {MID}
                     
                     channel = self.bot.get_channel(int(link_parts[5]))
-                    if not channel: continue
+                    if not channel: 
+                        try: await self.bot.fetch_channel(int(link_parts[5]))
+                        except NotFound: continue
                     
                     try: message = await channel.fetch_message(int(link_parts[6]))
                     except NotFound: continue
@@ -411,7 +415,9 @@ class Events(Cog):
                     
                     # Check if message has attached image or an embedded image
                     # If msg is an NSFW channel, show image regardless. Otherwise, check message channel.
-                    if msg.channel.is_nsfw() or not message.channel.is_nsfw():
+                    if (msg.channel.is_nsfw() or not message.channel.is_nsfw()) and \
+                        msg.author.permissions_in(msg.channel).embed_links:
+                        
                         if message.attachments:
                             # Check multiple attachments for eligibility
                             for url in [str(i.url) for i in message.attachments]:
@@ -428,24 +434,24 @@ class Events(Cog):
                                 # Only use supported image formats
                                 if url != Embed.Empty and url.endswith((".png", ".jpg", ".jpeg", ".gif")):
                                     # Use first discovered
-                                    if emb.image.url == Embed.Empty:  
+                                    if emb.image.url == Embed.Empty:
                                         emb.set_image(url=url)
                                         break
                     
                     new_content = new_content.replace(link, "[]")
 
                     # Special use case
-                    if message.channel.category and \
-                        message.channel.category.id in [740663474568560671, 740663386500628570] and \
-                        message.author.id == self.bot.user.id:
-                        if message.embeds and message.embeds[0].footer.text != Embed.Empty:
-                            uid = int(re.search(r"[0-9]{17}[0-9]*", message.embeds[0].footer.text).group())
-                            user = self.bot.get_user(uid)
-                            if not user:
-                                try: self.bot.fetch_user(user)
-                                except NotFound: user = None
+                    if message.author.id == self.bot.user.id and \
+                        message.embeds and message.embeds[0].footer.text != Embed.Empty and \
+                        "UID:" in message.embeds[0].footer.text:
 
-                            link_jumps.append(f"{user.mention if user else message.author.mention} | {self.bot.get_emoji(830223149340688384) if message.channel.is_nsfw() else self.bot.get_emoji(759539139976101918)} [[#{channel.name}]]({link})")
+                        uid = int(re.search(r"[0-9]{17}[0-9]*", message.embeds[0].footer.text).group())
+                        user = self.bot.get_user(uid)
+                        if not user:
+                            try: self.bot.fetch_user(user)
+                            except NotFound: user = None
+
+                        link_jumps.append(f"{user.mention if user else message.author.mention} | {self.bot.get_emoji(830223149340688384) if message.channel.is_nsfw() else ':white_check_mark:'} [[#{channel.name}]]({link})")
                     
                     # General use case
                     else:
