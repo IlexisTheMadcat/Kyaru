@@ -11,6 +11,7 @@ from asyncio import sleep
 from copy import deepcopy
 from urllib.request import urlretrieve as udownload
 
+import aiohttp
 from PIL import Image
 from discord import File, Member, Message, utils
 from discord.errors import Forbidden, NotFound, HTTPException
@@ -47,6 +48,7 @@ class Events(Cog):
         
         # Don't respond to bots.
         if msg.author.bot:
+
             return
 
         # Check if the message is a command. 
@@ -87,13 +89,15 @@ class Events(Cog):
 
         # Upscale media uploads in these categories
         if msg.guild and msg.channel.category and msg.channel.category.id in \
-            [740663474568560671, 740663386500628570, 815382953370189865]:
+            [740663474568560671, 740663386500628570]:
             if not msg.attachments:
                 await msg.channel.send(content=msg.author.mention, embed=Embed(
                     title="Images only",
                     description="You can only upload images in this channel.\n"
                                 "You can comment on images by sending its **message** URL in <#742571100009136148>"
                     ), delete_after=5)
+                
+                return
 
             if len(msg.attachments) > 1:
                 await msg.delete()
@@ -107,26 +111,90 @@ class Events(Cog):
             
             else:
                 await msg.channel.set_permissions(msg.author, send_messages=False)
-                has_upscaled = False
+                
+
+                # Check image size due to Discord upload limitations.
+                # Upscale will not be used in this case as the file will most likely be larger.
+                async def file_too_large_prompt():
+                    with suppress(NotFound):
+                        await msg.delete()
+
+                    buffer_target = self.bot.get_channel(789190968267636768)
+                    await buffer_target.set_permissions(msg.author, read_messages=True)
+
+                    conf = await msg.channel.send(msg.author.mention, 
+                        embed=Embed(
+                            color=0xff0000,
+                            description=f"Sorry for the inconvenience, please upload your image in this channel:\n"
+                                        f"{buffer_target.mention}; It is too large for me to send!\n"
+                                        f"\n"
+                                        f"To cancel, send `-cancel` in the buffer channel.\n"
+                                        f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
+
+                    while True:
+                        try:
+                            m = await self.bot.wait_for("message", timeout=120, check=lambda m: m.author.id == msg.author.id and m.channel.id == 789190968267636768)
+                        except TimeoutError:
+                            await conf.delete()
+                            await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                        
+                            if msg.channel.id != 777189629505699850:
+                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                        
+                            return
+
+                        else:
+                            if m.content == "-cancel":
+                                await buffer_target.send("Alright.", delete_after=2)
+                                await sleep(2)
+                                await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                                if msg.channel.id != 777189629505699850:
+                                    await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                                await conf.delete()
+
+                                return
+
+                            if not m.attachments:
+                                await buffer_target.send("Attach a file! Please try again.", delete_after=5)
+                                continue
+                        
+                            await buffer_target.send("Thanks!", delete_after=2)
+                            await sleep(2)
+                            await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                                
+                            await conf.edit(content="", 
+                                embed=Embed(
+                                    color=0x32d17f, 
+                                    description=f"Uploaded by {msg.author.mention}"
+                                                f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
+                                ).set_image(url=m.attachments[0].url
+                                ).set_footer(text=f"UID: {msg.author.id}"))
+
+                            await conf.add_reaction("⬆")
+
+                            if msg.channel.id != 777189629505699850:
+                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                            return
+                
+                attach = msg.attachments[0]
+                if attach.size >= 8000000:
+                    await file_too_large_prompt()
+                    return
 
                 conf = await msg.channel.send(
                     embed=Embed(
                         title="Upscaling For Quality",
                         description=f"{self.bot.get_emoji(813237675553062954)} {msg.author.mention} Please wait..."))
-                
-                attach = msg.attachments[0]
 
-                try:
-                    dcfileobj = await attach.to_file()
-                    attach_data = await attach.read()
-                except HTTPException or NotFound:
-                    await msg.author.send("**バカ** Baka! Don't delete the file before I can download it!")
-                    if msg.channel.id != 777189629505699850:
-                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                # Copy attachment
+                dcfileobj = await attach.to_file()
 
-                    await conf.delete()
-                    return
+                # Read attachment
+                attach_data = await attach.read()
                 
+                # Check if it's a GIF
                 img = Image.open(BytesIO(attach_data))
                 try:
                     img.seek(1)
@@ -135,153 +203,157 @@ class Events(Cog):
                 else:
                     img.seek(0)
                     is_animated = True
-
-                # Check image size due to Discord upload limitations.
-                # Upscale will not be used in this case as the file will most likely be larger.
-                async def file_too_large_prompt():
-                    with suppress(NotFound):
-                        await msg.delete()
-
-                    await conf.edit(content=msg.author.mention, embed=Embed(
-                        color=0xff0000,
-                        description=f"Please upload your image in [this channel](https://discord.com/channels/740662779106689055/789190968267636768), "
-                                    f"it is too large for me to send!\n"
-                                    f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
-                    
-                    buffer_target = self.bot.get_channel(789190968267636768)
-                    await buffer_target.set_permissions(msg.author, read_messages=True)
-
-                    try:
-                        m = await self.bot.wait_for("message", timeout=60, check=lambda m: m.author.id == msg.author.id and m.channel.id == 789190968267636768)
-                    except TimeoutError:
-                        await conf.delete()
-                        await buffer_target.edit(overwrites=msg.channel.category.overwrites)
-                        
-                        if msg.channel.id != 777189629505699850:
-                            await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-                        
-                        return
-
-                    else:
-                        if not m.attachments:
-                            await buffer_target.send("Attach a file next time! Try uploading in the main channel again.", delete_after=5)
-                            await sleep(2)
-                            await conf.delete()
-                            await buffer_target.edit(overwrites=msg.channel.category.overwrites)
-                            
-                            if msg.channel.id != 777189629505699850:
-                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-                            
-                            return
-                        
-                        await buffer_target.send("Thanks!", delete_after=2)
-                        await sleep(2)
-                        await buffer_target.edit(overwrites=msg.channel.category.overwrites)
-
-                        emb = Embed(
-                            color=0x32d17f, 
-                            description=f"Uploaded by {msg.author.mention}"
-                                        f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}")
-
-                        emb.set_image(url=m.attachments[0].url)
-                        emb.set_footer(text=f"UID: {msg.author.id}")
-                                
-                        await conf.edit(content="", embed=emb)
-                        await conf.add_reaction("⬆")
-
-                        if msg.channel.id != 777189629505699850:
-                            await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-
-                if attach.size >= 8000000:
-                    await file_too_large_prompt()
-                    return
                 
-                if is_animated:
+                if is_animated:  # Skip upscaling and use original attachment
                     attachment_file = dcfileobj
+                    has_upscaled = False
                 
-                else:
-                    # Loop until image is optimal size
-                    width, height = img.size
-                    last_width, last_height = 0, 0
-                    if not ((width > height and height < 1000) or \
-                        (height > width and width < 1000) or \
-                        (height == width and width < 1000)):
+                else:  # Continue with checks
+                    
+                    width, height = img.size  # Store original size
+                    
+                    # If smaller dimension is less than 300px, deny upload. 
+                    # # Image will look distorted.
+                    if ((width > height and height < 300) or \
+                        (height >= width and width < 300)):
+                        await conf.edit(
+                            embed=Embed(
+                                color=0xff0000,
+                                description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                            f"Error details: `Image is too small. Image will look distorted.`"
+                            ), delete_after=5)
+                    
+                    # If smaller dimension is greater than 1000px, skip upscaling
+                    if ((width > height and height > 1000) or \
+                        (height >= width and width > 1000)):
                         
                         attachment_file = dcfileobj
-                    
-                    else:
+                        has_upscaled = False
+
+                    else:  # Start upscale process
+                        
+                        # Store previous dimensions after upscaling to keep track
+                        last_width, last_height = deepcopy(width), deepcopy(height)
                         has_upscaled = True
-                        while True:
-                            r = post(
+
+                        current_data = attach_data
+                        retries = 3
+                        # Loop until image is optimal size or exceeded tries
+                        while retries >= 0:
+                            """
+                            # Upload image
+                            async with aiohttp.ClientSession() as cs:
+                                data = aiohttp.FormData()
+                                data.add_field(
+                                    'image', current_data,
+                                    filename=f'image_{msg.id}.jpg',
+                                    content_type='multipart/form-data')
+
+                                r = await cs.post(
                                     "https://api.deepai.org/api/waifu2x",
-                                    files={'image': attach_data},
-                                    headers={'api-key': self.bot.auth["DeepAI_key"]})
+                                    data=data, headers={'api-key': self.bot.auth["DeepAI_key"]}
+                                )
+
+                                r.json = await r.json()
+                            """
+
+                            # Upload image
+                            r = post(
+                                "https://api.deepai.org/api/waifu2x",
+                                files={'image': current_data},
+                                headers={'api-key': self.bot.auth["DeepAI_key"]}
+                            )
+
+                            r.json = r.json()
                             
                             try:
-                                result = udownload(r.json()["output_url"])
+                                result = udownload(r.json["output_url"])
                             except KeyError:
                                 with suppress(NotFound):
                                     await msg.delete()
 
-                                buffer_target = self.bot.get_channel(789198608175202394)
-                                buffer_msg = await buffer_target.send(file=dcfileobj)
-                                await conf.edit(content="", embed=Embed(color=0x32d17f,
-                                    description=f"Uploaded by {msg.author.mention}; Could not be upscaled or failed."
-                                                f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}").set_image(url=buffer_msg.attachments[0].url))
-                                await conf.add_reaction("⬆")
+                                await conf.edit(
+                                    embed=Embed(
+                                        color=0xff0000,
+                                        description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                                    f"Error details: `{r.json['err']}`"
+                                    ), delete_after=5)
+
                                 await msg.channel.edit(overwrites=msg.channel.category.overwrites)
                                 return
-
-                            img = Image.open(result[0])
-                            width, height = img.size
-
-                            if ((width > height and height < 1000) or \
-                                (height > width and width < 1000) or \
-                                (height == width and width < 1000)) and \
-                                (width != last_width and height != last_height):
-                                last_width, last_height = width, height
-                                await sleep(1)
-                                continue
+                            
                             else:
-                                break
+                                # Open returned image and check results
+                                img = Image.open(result[0])
+                                new_width, new_height = img.size
 
+                                # Image is optimal or cannot be upscaled further
+                                # as per previous dimension values
+                                if ((width > height and height > 1000) or \
+                                    (height >= width and width > 1000)) and \
+                                    (width != last_width and height != last_height):
+
+                                    break
+                                
+                                # Image is not optimal, try upscaling again
+                                else:
+                                    last_width, last_height = new_width, new_height
+                                    current_data = open(result[0], "rb")
+                                    await sleep(0.5)
+
+                                    retries = retries - 1
+                                    continue
+                        
+                        if retries == 0:
+                            await conf.edit(
+                                embed=Embed(
+                                    color=0xff0000,
+                                    description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                                f"Error details: `Retries exhausted.`"
+                                ), delete_after=5)
+                            
+                            return
+
+                        # Upscaled image is final and ready to send
                         attachment_file = File(result[0], filename=f"{msg.id}.png")
                 
-                buffer_target = self.bot.get_channel(789198608175202394) # #upload-buffer
+                # Forget posting if user already deleted message
                 try:
+                    await msg.channel.fetch_message(msg.id)
+                except NotFound:
+                    if msg.channel.id != 777189629505699850:
+                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                    await conf.edit( 
+                        embed=Embed(
+                            description=":x: Cancelled operation."
+                    ), delete_after=2)
+
+                    return
+                
+                else:
+                    buffer_target = self.bot.get_channel(789198608175202394)
                     buffer_msg = await buffer_target.send(file=attachment_file)
-                except HTTPException as e:
-                    if e.code == 40005:
-                        await file_too_large_prompt()
-                        return
-                    else:
-                        with suppress(NotFound):
-                            await msg.delete()
 
-                        raise e
-
-                with suppress(NotFound):
                     await msg.delete()
-
-                emb = Embed(
-                    color=0x32d17f, 
-                    description=f"Uploaded by {msg.author.mention}{'; Upscaled with Waifu2x.' if has_upscaled else ''}"
-                                f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}")
-                
-                emb.set_image(url=buffer_msg.attachments[0].url)
-                emb.set_footer(text=f"UID: {msg.author.id}")
             
-                await conf.edit(content="", embed=emb)
-                await conf.add_reaction("⬆")
-                
-                if msg.channel.id != 777189629505699850:
-                    await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                    await conf.edit(content="", 
+                        embed=Embed(
+                            color=0x32d17f, 
+                            description=f"Uploaded by {msg.author.mention}{'; Upscaled with Waifu2x.' if has_upscaled else ''}"
+                                        f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
+                            ).set_image(url=buffer_msg.attachments[0].url
+                            ).set_footer(text=f"UID: {msg.author.id}"))
 
-                return
+                    await conf.add_reaction("⬆")
+                
+                    if msg.channel.id != 777189629505699850:
+                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                    return
         
         # Search for message links and reformat.
-        new_content = deepcopy(msg.content)
-        link_findings = re.findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", new_content)
+        link_findings = re.findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", msg.content)
         if len(link_findings) > 5:
             link_findings = []
         if link_findings:
@@ -304,74 +376,91 @@ class Events(Cog):
                     await msg.remove_reaction("📩", self.bot.user)
                     return
                 else:
-                    conf = await msg.channel.send(f"{self.bot.get_emoji(813237675553062954)} Loading...")                    
+                    conf = await msg.channel.send(embed=Embed(
+                        color=msg.author.color,
+                        description=f"{self.bot.get_emoji(813237675553062954)} Loading..."))
             
             elif pass_conf:
-                conf = await msg.channel.send(f"{self.bot.get_emoji(813237675553062954)} Loading...")
-                
-            link_jumps = list()
+                conf = await msg.channel.send(
+                    embed=Embed(
+                        color=msg.author.color,
+                        description=f"{self.bot.get_emoji(813237675553062954)} Loading..."))
 
-            em: Embed = Embed(
+            emb = Embed(
                 color=msg.author.color
             ).set_author(
                 name=msg.author.display_name,
-                icon_url=msg.author.avatar_url)
+                icon_url=msg.author.avatar_url
+            ).set_footer(text=f"UID: {msg.author.id}")
 
             if link_findings:
-                for e, link in enumerate(link_findings, 1):
+                messages = []
+                link_jumps = []
+
+                new_content = deepcopy(msg.content)
+                for link in link_findings:
                     link_parts = link.split("/")
-                    channel = self.bot.get_channel(int(link_parts[5]))
-                    if not channel:
-                        link_jumps.append(f"@Unknown | :question: [{'{'}Jump to message{'}'}]({link})")
-                        continue
+                    # https: / / discord.com / channels / {GID} / {CID} / {MID}
                     
-                    try:
-                        message = await channel.fetch_message(int(link_parts[6]))
-                    except NotFound:
-                        continue
+                    channel = self.bot.get_channel(int(link_parts[5]))
+                    if not channel: continue
+                    
+                    try: message = await channel.fetch_message(int(link_parts[6]))
+                    except NotFound: continue
+                    else: messages.append(message)
+                    
+                    # Check if message has attached image or an embedded image
+                    # If msg is an NSFW channel, show image regardless. Otherwise, check message channel.
+                    if msg.channel.is_nsfw() or not message.channel.is_nsfw():
+                        if message.attachments:
+                            # Check multiple attachments for eligibility
+                            for url in [str(i.url) for i in message.attachments]:
+                                # Only use supported image formats
+                                if url.endswith((".png", ".jpg", ".jpeg", ".gif")):
+                                    # Use first discovered
+                                    if emb.image.url == Embed.Empty:  
+                                        emb.set_image(url=url)
+                                        break
+
+                        elif message.embeds:
+                            # Check multiple attachments for eligibility
+                            for url in [str(i.image.url) for i in message.embeds]:
+                                # Only use supported image formats
+                                if url != Embed.Empty and url.endswith((".png", ".jpg", ".jpeg", ".gif")):
+                                    # Use first discovered
+                                    if emb.image.url == Embed.Empty:  
+                                        emb.set_image(url=url)
+                                        break
                     
                     new_content = new_content.replace(link, "[]")
 
-                    link_jumps.append(f"{message.author.mention} | {':warning:' if channel.is_nsfw() else ':white_check_mark:'} [{'{'}#{channel.name}{'}'}]({link})")
-                    user = self.bot.get_user(message.author.id)
+                    # Special use case
+                    if message.channel.category and \
+                        message.channel.category.id in [740663474568560671, 740663386500628570] and \
+                        message.author.id == self.bot.user.id:
+                        if message.embeds and message.embeds[0].footer.text != Embed.Empty:
+                            uid = int(re.search(r"[0-9]{17}[0-9]*", message.embeds[0].footer.text).group())
+                            user = self.bot.get_user(uid)
+                            if not user:
+                                try: self.bot.fetch_user(user)
+                                except NotFound: user = None
 
-                link_jumps = list(set(link_jumps))
+                            link_jumps.append(f"{user.mention if user else message.author.mention} | {self.bot.get_emoji(830223149340688384) if message.channel.is_nsfw() else self.bot.get_emoji(759539139976101918)} [[#{channel.name}]]({link})")
                     
-            # Clean and modify results
-            link_jumps.reverse()
-            new_content = new_content.strip("\n")
-            new_content = new_content.strip(" ")
-            backup = deepcopy(new_content)
-            new_content = new_content.strip("[]")
+                    # General use case
+                    else:
+                        link_jumps.append(f"{message.author.mention} | {self.bot.get_emoji(830223149340688384) if message.channel.is_nsfw() else ':white_check_mark:'} [[#{channel.name}]]({link})")
 
-            if new_content:
-                em.description = f"{backup}\n{newline.join(link_jumps)}"
-            else:
-                em.description = "\n".join(link_jumps)
+                if messages:
+                    await msg.delete()
+                    new_content = new_content.strip("[]")
+                    emb.description = f"{new_content}\n" \
+                                      f"{newline.join(link_jumps)}"
 
-            attachment_files = []
-            for attach in msg.attachments:
-                try:
-                    dcfileobj = await attach.to_file()
-                    attachment_files.append(dcfileobj)
-                except Exception:
-                    continue   
-
-            if link_jumps:
-                try:
-                    await msg.channel.send(
-                        files=attachment_files,
-                        embed=em)
-                except Exception as ee:
-                    print(type(ee).name+":", ee)
-                    await msg.add_reaction("❌")
-                    await sleep(5)
-                    await msg.remove_reaction("❌", msg.guild.me)
+                    await conf.edit(embed=emb)
                 else:
-                    with suppress(NotFound):
-                        await msg.delete()
-                
-                await conf.delete()
+                    await msg.clear_reactions()
+                    await conf.delete()
 
         # Automate image-help purging
         if not msg.author.bot and \
@@ -398,7 +487,7 @@ class Events(Cog):
                 content=msg.author.mention,
                 embed=Embed(
                     title="Thread created.",
-                    description="If your question about this image has been answered, please send `k-close` in chat to clear.\n"
+                    description="If your question about this image has been answered, please send `-close` in chat to clear.\n"
                                 "Otherwise, inactivity (180s) will purge this channel automatically."))
             
             messages_sent = 1
@@ -415,7 +504,7 @@ class Events(Cog):
                     return
                 
                 else:
-                    if help_resp.content == "k-close" and (msg.author.id == help_resp.author.id or help_resp.author.permissions_in(msg.channel).manage_messages):
+                    if help_resp.content == "-close" and (msg.author.id == help_resp.author.id or help_resp.author.permissions_in(msg.channel).manage_messages):
                         while messages_sent > 0:
                             await help_resp.channel.purge()
                             messages_sent -= 100
@@ -491,19 +580,17 @@ class Events(Cog):
             message.channel.category.id in \
             [740663386500628570, 740663474568560671]:
 
-            if str(payload.emoji) == "⬆" and \
-                message.embeds[0].footer.text and \
+            if str(payload.emoji) == "⬆":
+                if message.embeds and message.embeds[0].footer.text != Embed.Empty and \
                 str(user.id) in message.embeds[0].footer.text:
-
-                member = await message.guild.fetch_member(user.id)
-                await message.remove_reaction(payload.emoji, member)
-                await message.channel.send(
-                    content=user.mention,
-                    embed=Embed(
-                        title="No Self-Upvoting", 
-                        description="I've already done that for you.",
-                        color=0x32d17f),
-                    delete_after=5)
+                    await message.remove_reaction(payload.emoji, member)
+                    await message.channel.send(
+                        content=member.mention,
+                        embed=Embed(
+                            title="No Self-Upvoting", 
+                            description="I've already done that for you.",
+                            color=0x32d17f),
+                        delete_after=5)
 
             if str(payload.emoji) == "❌":
                 if (user.id == message.author.id or \
