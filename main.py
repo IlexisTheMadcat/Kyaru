@@ -30,7 +30,7 @@ CONFIG_DEFAULTS = {
 
 DATA_DEFAULTS = {
     "UserData": {
-        "userID": {  # User Settings
+        "UID": {  # User Settings
             "Settings": {
                 "auto_emb": "bool",
             },
@@ -39,7 +39,10 @@ DATA_DEFAULTS = {
             },
             "Gallery": {
                 "channelID": []
-            }  # {str(channelID):[imageURL]}
+            },  # {str(channelID):[imageURL]}
+            "Ranking": {
+                "EXP": 0
+            }
         }
     },
     "GlobalEventData": {
