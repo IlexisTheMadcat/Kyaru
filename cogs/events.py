@@ -13,6 +13,7 @@ from urllib.request import urlretrieve as udownload
 
 import aiohttp
 from PIL import Image
+from expiringdict import ExpiringDict
 from discord import File, Member, Message, utils
 from discord.errors import Forbidden, NotFound, HTTPException
 from discord.ext.commands.cog import Cog
@@ -35,8 +36,10 @@ newline = "\n"
 class Events(Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.just_joined = list()
-        self.bot.pause_member_update = list()
+        self.bot.pause_member_update = []
+        self.just_joined = ExpiringDict(
+            max_len=float('inf'), 
+            max_age_seconds=600)
 
     # Message events
     # --------------------------------------------------------------------------------------------------------------------------
@@ -856,60 +859,48 @@ class Events(Cog):
             os.remove(f"Workspace/user_joined_{member.id}.png")
             image_url = image_container.attachments[0].url
 
-            channel = self.bot.get_channel(741381152543211550)  # #🐾general ID
-            emb = Embed(
-                title=f"{member.name} just joined the server!",
-            ).set_image(url=image_url)
-            emb.set_footer(
-                text=f"UID: {member.id}{'; Animated avatars are not supported, sowwy!' if member.is_avatar_animated() else ''}")
-            start_the_timer = await channel.send(content=f"Welcome {member.mention}! Have fun and stay safe!", embed=emb)
+            general = self.bot.get_channel(741381152543211550)
 
-            self.just_joined.append(member.id)
-            try:
-                member = await self.bot.wait_for("member_remove", timeout=600, 
-                    check=lambda left_member: left_member.id == member.id)
+            welcome_msg = await general.send(content=f"Welcome {member.mention}! Have fun and stay safe!", 
+                embed=Embed(
+                    title=f"{member.name} just joined the server!",
+                ).set_image(url=image_url
+                ).set_footer(text=f"UID: {member.id}"))
 
-            except TimeoutError:
-                self.just_joined.remove(member.id)
-            else:
-                history = await start_the_timer.channel.history(limit=5).flatten()
-                if start_the_timer.id == history[0].id:
-                    await start_the_timer.delete()
-                else:
-                    await channel.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
-
-                return
+            self.just_joined.update({str(member.id):welcome_msg})
 
         elif member.guild.id == 740662779106689055 and member.bot:
-            channel = self.bot.get_channel(741381152543211550)
-            emb = Embed(
-                title=f"{member} has been added to the server.",
-            ).set_image(url=member.avatar_url)
-            emb.set_footer(text=f"UID: {member.id}")
+            general = self.bot.get_channel(741381152543211550)
             
-            start_the_timer = await channel.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", embed=emb)
+            welcome_msg = await general.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", 
+                embed=Embed(
+                    title=f"{member} has been added to the server.",
+                ).set_image(url=member.avatar_url
+                ).set_footer(text=f"UID: {member.id}"))
 
-            self.just_joined.append(member.id)
-            try:
-                member = await self.bot.wait_for("member_remove", timeout=180, check=lambda member2: member2.id == member.id)
-            except TimeoutError:
-                self.just_joined.remove(member.id)
-            else:
-                await start_the_timer.delete()
+            self.just_joined.update({str(member.id):welcome_msg})
 
     @Cog.listener()
     async def on_member_remove(self, member):
-        if member.id in self.just_joined and member.guild.id == 740662779106689055:
-            self.just_joined.remove(member.id)
-            return
-        
-        if not member.bot and member.guild.id == 740662779106689055:
-            channel = self.bot.get_channel(741381152543211550)
-            await channel.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
+        if member.guild.id == 740662779106689055:
+            general = self.bot.get_channel(741381152543211550)
+
+            if str(member.id) in self.just_joined:
+                welcome_msg = self.just_joined[str(member.id)]
+                general_history = await general.history(limit=5).flatten()
+
+                if welcome_msg.id == general_history[0].id:
+                    await welcome_msg.delete()
+                else:
+                    await general.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
+                
+                self.just_joined.pop(str(member.id))
+
+            elif not member.bot:
+                await general.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
             
-        elif member.bot and member.guild.id == 740662779106689055:
-            channel = self.bot.get_channel(741381152543211550)
-            await channel.send(content=f"`{member}` was removed from the server.")
+            elif member.bot:
+                await general.send(content=f"`{member}` was removed from the server.")
 
     @Cog.listener()
     async def on_member_update(self, pre, pos):
