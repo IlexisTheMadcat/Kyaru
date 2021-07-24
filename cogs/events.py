@@ -51,7 +51,6 @@ class Events(Cog):
         
         # Don't respond to bots.
         if msg.author.bot:
-
             return
 
         # Check if the message is a command. 
