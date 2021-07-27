@@ -40,8 +40,11 @@ DATA_DEFAULTS = {
             "Gallery": {
                 "channelID": []
             },  # {str(channelID):[imageURL]}
-            "Ranking": {
-                "EXP": 0
+            "Leveling": {
+                "personal_modifier": 0.00,
+                "Cumulative EXP": 0,
+                "Spending EXP": 0,
+                "inventory": []
             }
         }
     },
