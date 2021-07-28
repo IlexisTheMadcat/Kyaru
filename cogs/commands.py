@@ -273,7 +273,7 @@ class Commands(Cog):
         if selection == "0" or selection not in ["1","2","3","4","5"]:
             selection = str(randint(1,5))
 
-        background = Image.open(f"Workspace/Files/user_joined_modal{'_gif' if member.is_avatar_animated() else ''}_{selection}.png", 'r')
+        background = Image.open(f"Files/user_joined_modal{'_gif' if member.is_avatar_animated() else ''}_{selection}.png", 'r')
         img = img.resize((500,500))
         background.paste(img, image_choices[selection], mask=img)
         background.save(f"Workspace/user_joined_{member.id}.png", format="png")
