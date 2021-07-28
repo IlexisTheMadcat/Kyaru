@@ -66,7 +66,7 @@ class Commands(Cog):
 
         if member.id == ctx.author.id:
             await ctx.send(embed=Embed(
-                title="NH Rank",
+                title="Neko Heaven Rank",
                 description=f"You are currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
                             f"You are {remaining_exp_to_next} EXP away from your next level.\n"
                             f"\n"
@@ -75,7 +75,7 @@ class Commands(Cog):
             ))
         else:
             await ctx.send(embed=Embed(
-                title="NH Rank",
+                title="Neko Heaven Rank",
                 description=f"{member.mention} is currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
                             f"They are {remaining_exp_to_next} EXP away from their next level.\n"
                             f"\n"
@@ -83,7 +83,64 @@ class Commands(Cog):
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
 
-    @command(name="setlevel", aliases=["setrank"])
+    @command(name="leaderboard", aliases=["lead"])
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def leaderboard(self, ctx):
+        users = [(uid, self.bot.user_data["UserData"][uid]["Leveling"]["Cumulative EXP"]) for uid in self.bot.user_data["UserData"]]
+        users.sort(key=lambda i: i[1])
+        users = users[-10:len(users)+1]
+        users.reverse()
+
+
+        member_rank_list = []
+        for uid, exp in users:
+            # Working copy of new cumulative exp
+            cumulative_exp_copy = deepcopy(self.bot.user_data["UserData"][str(uid)]["Leveling"]["Cumulative EXP"])
+
+            # Iterate through new cumulative EXP for new level
+            current_level = 0
+            while True:
+                cumulative_exp_copy -= (self.a*(current_level+1)) + self.b
+                
+                if cumulative_exp_copy < 0: 
+                    cumulative_exp_copy += (self.a*(current_level+1)) + self.b
+                    break
+                else:
+                    current_level += 1
+                
+                continue
+
+            total_exp_to_next = (self.a*(current_level+1))+self.b
+            remaining_exp_to_next = ((self.a*(current_level+1))+self.b) - cumulative_exp_copy
+            obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
+
+            full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(uid)]["Leveling"]["Cumulative EXP"])
+            full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(uid)]["Leveling"]["Spending EXP"])
+
+            if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+            if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+
+            member = ctx.guild.get_member(int(uid))
+            if not member:
+                try: await ctx.guild.fetch_member(int(uid))
+                except NotFound: 
+                    self.bot.user_data["UserData"].pop(uid)
+                    continue
+
+            member_rank_list.append(f"▄{member.mention}\n"
+                                    f"▀ Level {current_level} ({obtained_exp_to_next}/{total_exp_to_next} EXP)"
+            )
+
+        await ctx.send(embed=Embed(
+            title="Neko Heaven Leaderboard",
+            description=f"Here are the top 10 ranked users for this server:\n"
+                        f"----------\n"
+                        f"\n"
+                        f"{newline.join(member_rank_list)}"
+        ))
+
+
+    @command(aliases=["setlevel", "setrank", "sl", "sr"])
     @has_permissions(administrator=True)
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def set_cumulative_exp(self, ctx, member, level=None):
@@ -372,6 +429,18 @@ class Commands(Cog):
                                 f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
                     ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
                     ).set_image(url=choice(level_up_gifs)))
+
+    @leaderboard.before_invoke
+    async def placeholder_remove(self, ctx):
+        if ctx.command.name == "leaderboard":
+            if "UID" in self.bot.user_data['UserData']:
+                self.bot.user_data["UserData"].pop("UID")
+
+    @leaderboard.after_invoke
+    async def placeholder_add(self, ctx):
+        if ctx.command.name == "leaderboard":
+            if "UID" not in self.bot.user_data['UserData']:
+                self.bot.user_data["UserData"].update({"UID":self.bot.defaults["UserData"]["UID"]})
 
 def setup(bot):
     bot.add_cog(Commands(bot))
