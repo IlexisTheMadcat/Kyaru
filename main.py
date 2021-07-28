@@ -65,6 +65,7 @@ INIT_EXTENSIONS = [
     "commands",
     "events",
     "help",
+    "leveling",
     "repl",
     # "web"
 ]
