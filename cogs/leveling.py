@@ -30,6 +30,7 @@ class Commands(Cog):
         # ax+b
         self.a = 50
         self.b = 100
+        self.exp_gain = 50
     
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -43,10 +44,10 @@ class Commands(Cog):
         # Iterate through new cumulative EXP for new level
         current_level = 0
         while True:
-            cumulative_exp_copy -= (self.a*current_level) + self.b
+            cumulative_exp_copy -= (self.a*(current_level+1)) + self.b
                 
             if cumulative_exp_copy < 0: 
-                cumulative_exp_copy += (self.a*current_level) + self.b
+                cumulative_exp_copy += (self.a*(current_level+1)) + self.b
                 break
             else:
                 current_level += 1
@@ -59,6 +60,9 @@ class Commands(Cog):
 
         full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"])
         full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"])
+
+        if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+        if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
 
         await ctx.send(embed=Embed(
             title="NH Rank",
@@ -91,7 +95,13 @@ class Commands(Cog):
             await ctx.send(embed=Embed(
                 color=0xff0000,
                 description=f"No member with UID {member} found."))
-
+            return
+        
+        if member.bot:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"Bots don't count."))
+            return
 
         if str(member.id) not in self.bot.user_data["UserData"]:
             self.bot.user_data["UserData"][str(member.id)] = \
@@ -138,7 +148,13 @@ class Commands(Cog):
             await ctx.send(embed=Embed(
                 color=0xff0000,
                 description=f"No member with UID {member} found."))
-
+            return
+        
+        if member.bot:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"Bots don't count."))
+            return
 
         if str(member.id) not in self.bot.user_data["UserData"]:
             self.bot.user_data["UserData"][str(member.id)] = \
@@ -167,8 +183,6 @@ class Commands(Cog):
             return
 
         if msg.guild.id == 740662779106689055:
-            exp_gain = 50
-
             rewards = {
                 1:  851225537165918259,  # r@Interested
                 3:  851236641531363338,  # r@Media Perms
@@ -186,7 +200,7 @@ class Commands(Cog):
             }
             
             ignored_channels = [
-                740923481939509258,  # c#Staff Room
+                # 740923481939509258,  # c#Staff Room
                 740676328935653406,  # c#Bulletin
                 761793288910143498,  # t#⚠️nsfw-bots
                 780654704362389535,  # c#Upstairs
@@ -204,11 +218,18 @@ class Commands(Cog):
             ]
 
             modifiers = {
-                741381152543211550: 1.05,  # t#🐾general-1
-                769386184895234078: 0.75,  # t#🐾high-tier-hideout
-                816671250025021450: 0.50,  # c#Robotics Club
-                740663474568560671: 0.20,  # c#SFW Catgirls
-                740663386500628570: 0.20,  # c#NSFW Catgirls
+                "textc": {
+                    741381152543211550: 1.05,  # t#🐾general-1
+                    769386184895234078: 0.75,  # t#🐾high-tier-hideout
+                },
+                "categoryc": {
+                    816671250025021450: 0.05,  # c#Robotics Club
+                    740663474568560671: 0.20,  # c#SFW Catgirls
+                    740663386500628570: 0.20,  # c#NSFW Catgirls
+                },
+                "role": {  # Role does not stack
+                    748505664472612994: 1.05,  # r@⭐Neko Bookster!⭐
+                }
             }
 
             def calculate_earnings():
@@ -224,15 +245,34 @@ class Commands(Cog):
                 if any([i in [x.id for x in msg.author.roles] for i in ignored_roles]):
                     return 0
 
-                try: modifier_1 = modifiers[msg.channel.id]
-                except KeyError: modifier_1 = 0
-                if msg.channel.category:
-                    try: modifier_2 = modifiers[msg.channel.category.id]
-                    except KeyError: modifier_2 = 0
+                # check text channel
+                if msg.channel.id in modifiers["textc"]: 
+                    modifier_1 = modifiers["textc"][msg.channel.id]
+                else: modifier_1 = 1
+                
+                # check category channel
+                if msg.channel.category and msg.channel.category.id in modifiers["categoryc"]: 
+                    # special case for neko media channels
+                    if msg.channel.category.id in [740663474568560671, 740663386500628570]:
+                        if not msg.attachments or len(msg.attachments) > 1:
+                            return 0
 
-                total = exp_gain + (exp_gain*modifier_1) + (exp_gain*modifier_2) + \
-                    (exp_gain*self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["personal_modifier"])
+                    modifier_2 = modifiers["categoryc"][msg.channel.category.id]
+                else: modifier_2 = 1
+                
+                # check highest booster role
+                modifier_3 = 0
+                has_booster_role = False
+                for i in [x.id for x in msg.author.roles]:
+                    if i in modifiers["role"] and modifiers["role"][i] > modifier_3:
+                        modifier_3 = modifiers["role"][i]
+                        has_booster_role = True
+                if not has_booster_role: modifier_3 = 1
 
+                # personal modifier
+                last_modifier = self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["personal_modifier"]
+
+                total = (((((self.exp_gain)*modifier_1)*modifier_2)*modifier_3)*last_modifier)
                 if not total:
                     self.exp_cooldown.pop(msg.author.id)
 
@@ -288,6 +328,9 @@ class Commands(Cog):
                 full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"])
                 full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"])
 
+                if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+                if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+                
                 level_up_gifs = [
                     "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
                     "https://i.pinimg.com/originals/2e/27/d5/2e27d5d124bc2a62ddeb5dc9e7a73dd8.gif",
@@ -308,7 +351,7 @@ class Commands(Cog):
                     if not role:
                         raise NotFound("role not found.")
 
-                    msg.author.add_roles(role)
+                    await msg.author.add_roles(role)
 
                 await msg.channel.send(content=msg.author.mention, embed=Embed(
                     description=f"You've leveled up! Thanks for spending your time with us.\n"
