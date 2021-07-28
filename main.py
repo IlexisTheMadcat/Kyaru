@@ -41,7 +41,7 @@ DATA_DEFAULTS = {
                 "channelID": []
             },  # {str(channelID):[imageURL]}
             "Leveling": {
-                "personal_modifier": 0.00,
+                "personal_modifier": 1.00,
                 "Cumulative EXP": 0,
                 "Spending EXP": 0,
                 "inventory": []
