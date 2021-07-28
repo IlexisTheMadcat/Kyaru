@@ -17,20 +17,21 @@ from discord.ext.commands.core import (
 
 from utils.classes import Embed
 
+newline = "\n"
+
+
 class Commands(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.exp_cooldown = ExpiringDict(
             max_len=float('inf'), 
-            max_age_seconds=60)
+            max_age_seconds=1)
 
         # ax+b
         self.a = 50
-        self.b = 250
-        self.subtract_value = self.b+self.a
+        self.b = 100
     
-    @command(name="rank")
-    @has_permissions(send_messages=True)
+    @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def check_rank(self, ctx, member: Member = None):
         if not member:
@@ -42,35 +43,117 @@ class Commands(Cog):
         # Iterate through new cumulative EXP for new level
         current_level = 0
         while True:
-            cumulative_exp_copy -= self.subtract_value
+            cumulative_exp_copy -= (self.a*current_level) + self.b
                 
             if cumulative_exp_copy < 0: 
-                cumulative_exp_copy += self.subtract_value
+                cumulative_exp_copy += (self.a*current_level) + self.b
                 break
             else:
                 current_level += 1
-                self.subtract_value += 50
                 
             continue
 
-        total_exp_to_next = (self.a*current_level)+self.b
-        remaining_exp_to_next = ((self.a*current_level)+self.b)-cumulative_exp_copy
+        total_exp_to_next = (self.a*(current_level+1))+self.b
+        remaining_exp_to_next = ((self.a*(current_level+1))+self.b) - cumulative_exp_copy
+        obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
 
         full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"])
         full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"])
 
         await ctx.send(embed=Embed(
             title="NH Rank",
-            description=f"You are level {current_level}.\n" \
-                        f"You are {remaining_exp_to_next}/{total_exp_to_next} EXP away from your next level.\n"
+            description=f"You are currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
+                        f"You are {remaining_exp_to_next} EXP away from your next level.\n"
                         f"\n"
                         f"Current Spending EXP: 💲 {full_spending_exp}\n"
                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
         ))
 
+    @command(name="setlevel", aliases=["setrank"])
+    @has_permissions(administrator=True)
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def set_cumulative_exp(self, ctx, member, level=None):
+        try:
+            member = member.strip("<@!>")
+            member = int(member)
+            level = int(level)
+        except ValueError:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description="**Invalid argument(s).**\n"
+                            "`member`  and `level` must be numbers.\n"
+                            "`member` should be a UID that belongs to a member in this server."))
+
+            return
+
+        member = ctx.guild.get_member(member)
+        if not member:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"No member with UID {member} found."))
+
+
+        if str(member.id) not in self.bot.user_data["UserData"]:
+            self.bot.user_data["UserData"][str(member.id)] = \
+                self.bot.defaults["UserData"]["UID"]
+
+        cumulative_exp = 0
+
+        while True:
+            level -= 1
+
+            if level < 0: 
+                level += 1
+                break
+            else:
+                cumulative_exp += (self.a*level) + self.b
+                
+            continue
+
+        self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"] = cumulative_exp
+
+        await ctx.send(embed=Embed(
+            title="Set Level",
+            description=f"✅ Set {member.mention}'s level to {level}."))
+
+    @command(name="setspending", aliases=["setmoney"])
+    @has_permissions(administrator=True)
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def set_spending_exp(self, ctx, member, amount=None):
+        try:
+            member = member.strip("<@!>")
+            member = int(member)
+            amount = int(amount)
+        except ValueError:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description="**Invalid argument(s).**\n"
+                            "`member`  and `amount` must be numbers.\n"
+                            "`member` should be a UID that belongs to a member in this server."))
+
+            return
+
+        member = ctx.guild.get_member(member)
+        if not member:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"No member with UID {member} found."))
+
+
+        if str(member.id) not in self.bot.user_data["UserData"]:
+            self.bot.user_data["UserData"][str(member.id)] = \
+                self.bot.defaults["UserData"]["UID"]
+
+        self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"] = amount
+
+        await ctx.send(embed=Embed(
+            title="Set Spending",
+            description=f"✅ Set {member.mention}'s Spending EXP to {amount}."))
+
     @Cog.listener()
     async def on_message(self, msg):
-        return
+        if msg.author.id != 331551368789622784:
+            return
 
         # Don't respond to bots.
         if msg.author.bot:
@@ -83,44 +166,49 @@ class Commands(Cog):
             self.bot.inactive = 0
             return
 
-        if ctx.guild.id == 740662779106689055:
-            exp_gain = 75
+        if msg.guild.id == 740662779106689055:
+            exp_gain = 50
 
             rewards = {
-                1:  851225537165918259,  # @Interested
-                3:  851236641531363338,  # @Media Perms
-                5:  851225705148841985,  # @Neko Admirer
-                10: 851225900607602700,  # @Neko Lover
-                15: 851225951161417738,  # @Neko Addict
-                20: 740677748204240980,  # @Neko Headpatter
-                22: 740677678159364147,  # @Neko Enthusiast
-                24: 740679288533024911,  # @Neko Body Rubber
-                26: 740679721385328750,  # @Neko Pleasurer
-                28: 740677950315429969,  # @Neko Caretaker
-                30: 740678012097265704,  # @Neko Owner
-                32: 755608514755428442,  # @Neko Babysitter
-                34: 830525152553992244,  # @Neko Connoisseur
+                1:  851225537165918259,  # r@Interested
+                3:  851236641531363338,  # r@Media Perms
+                5:  851225705148841985,  # r@Neko Admirer
+                10: 851225900607602700,  # r@Neko Lover
+                15: 851225951161417738,  # r@Neko Addict
+                20: 740677748204240980,  # r@Neko Headpatter
+                22: 740677678159364147,  # r@Neko Enthusiast
+                24: 740679288533024911,  # r@Neko Body Rubber
+                26: 740679721385328750,  # r@Neko Pleasurer
+                28: 740677950315429969,  # r@Neko Caretaker
+                30: 740678012097265704,  # r@Neko Owner
+                32: 755608514755428442,  # r@Neko Babysitter
+                34: 830525152553992244,  # r@Neko Connoisseur
             }
             
             ignored_channels = [
-                740923481939509258,  # Staff Room
-                740676328935653406,  # Bulletin
-                761793288910143498,  # #⚠️nsfw-bots
-                780654704362389535,  # Upstairs
-                852405741402062880,  # NReader
+                740923481939509258,  # c#Staff Room
+                740676328935653406,  # c#Bulletin
+                761793288910143498,  # t#⚠️nsfw-bots
+                780654704362389535,  # c#Upstairs
+                852405741402062880,  # c#NReader
+            ]
+
+            ignored_roles = [
+                789960054970515487,  # r@⛔Leveling Paused
+                741431440490627234   # r@Muted
             ]
 
             ignore_cooldown = [
-                740663474568560671,  # SFW Catgirls
-                740663386500628570   # NSFW Catgirls
+                740663474568560671,  # c#SFW Catgirls
+                740663386500628570   # c#NSFW Catgirls
             ]
 
             modifiers = {
-                741381152543211550: 1.05,  # #general-1
-                769386184895234078: 0.75,  # #high-tier-hideout
-                816671250025021450: 0.50,  # Robotics Club
-                740663474568560671: 0.20,  # SFW Catgirls
-                740663386500628570: 0.20,  # NSFW Catgirls
+                741381152543211550: 1.05,  # t#🐾general-1
+                769386184895234078: 0.75,  # t#🐾high-tier-hideout
+                816671250025021450: 0.50,  # c#Robotics Club
+                740663474568560671: 0.20,  # c#SFW Catgirls
+                740663386500628570: 0.20,  # c#NSFW Catgirls
             }
 
             def calculate_earnings():
@@ -133,6 +221,9 @@ class Commands(Cog):
                     (msg.channel.category and msg.channel.category.id in ignored_channels):
                     return 0
 
+                if any([i in [x.id for x in msg.author.roles] for i in ignored_roles]):
+                    return 0
+
                 try: modifier_1 = modifiers[msg.channel.id]
                 except KeyError: modifier_1 = 0
                 if msg.channel.category:
@@ -141,6 +232,9 @@ class Commands(Cog):
 
                 total = exp_gain + (exp_gain*modifier_1) + (exp_gain*modifier_2) + \
                     (exp_gain*self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["personal_modifier"])
+
+                if not total:
+                    self.exp_cooldown.pop(msg.author.id)
 
                 return total
 
@@ -155,14 +249,13 @@ class Commands(Cog):
             # Iterate through current cumulative EXP for level
             current_level = 0
             while True:
-                cumulative_exp_copy -= self.subtract_value
+                cumulative_exp_copy -= (self.a*(current_level+1)) + self.b
                 
                 if cumulative_exp_copy < 0: 
-                    cumulative_exp_copy += self.subtract_value
+                    cumulative_exp_copy += (self.a*(current_level+1)) + self.b
                     break
                 else:
                     current_level += 1
-                    self.subtract_value += 50
                 
                 continue
 
@@ -177,20 +270,20 @@ class Commands(Cog):
             # Iterate through new cumulative EXP for new level
             new_level = 0
             while True:
-                cumulative_exp_copy -= self.subtract_value
+                cumulative_exp_copy -= (self.a*(new_level+1)) + self.b
                 
                 if cumulative_exp_copy < 0: 
-                    cumulative_exp_copy += self.subtract_value
+                    cumulative_exp_copy += (self.a*(new_level+1)) + self.b
                     break
                 else:
                     new_level += 1
-                    self.subtract_value += 50
                 
                 continue
 
-            if level1 != level2:
-                total_exp_to_next = (self.a*new_level)+self.b
-                remaining_exp_to_next = ((self.a*new_level)+self.b) - cumulative_exp_copy
+            if current_level != new_level:
+                total_exp_to_next = (self.a*(new_level+1))+self.b
+                remaining_exp_to_next = ((self.a*(new_level+1))+self.b) - cumulative_exp_copy
+                obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
                 
                 full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"])
                 full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"])
@@ -211,7 +304,11 @@ class Commands(Cog):
                 try: reward = rewards[new_level]
                 except KeyError: reward = None
                 if reward:
-                    role = msg.guild.fetch_role(reward)
+                    role = msg.guild.get_role(reward)
+                    if not role:
+                        raise NotFound("role not found.")
+
+                    msg.author.add_roles(role)
 
                 await msg.channel.send(content=msg.author.mention, embed=Embed(
                     description=f"You've leveled up! Thanks for spending your time with us.\n"
@@ -220,7 +317,7 @@ class Commands(Cog):
                                 f"\n"
                                 f"Current Spending EXP: 💲 {full_spending_exp}\n"
                                 f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
-                    ).set_footer(text=f"You are {remaining_exp_to_next}/{total_exp_to_next} away from the next level."
+                    ).set_footer(text=f"You are {remaining_exp_to_next} away from the next level."
                     ).set_image(url=choice(level_up_gifs)))
 
 def setup(bot):
