@@ -235,9 +235,6 @@ class Commands(Cog):
 
     @Cog.listener()
     async def on_message(self, msg):
-        if msg.author.id != 331551368789622784:
-            return
-
         # Don't respond to bots.
         if msg.author.bot:
             return
