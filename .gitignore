@@ -2,5 +2,5 @@
 .vs
 Storage
 Workspace
-!Workspace/Files
 *ServiceAccountKey.json*
+*shop_embed.json*
