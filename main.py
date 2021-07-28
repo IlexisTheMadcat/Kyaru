@@ -69,8 +69,8 @@ INIT_EXTENSIONS = [
     # "web"
 ]
 
-if exists("Workspace/Files/ServiceAccountKey.json"):
-    with open("Workspace/Files/ServiceAccountKey.json", "r") as f:
+if exists("Files/ServiceAccountKey.json"):
+    with open("Files/ServiceAccountKey.json", "r") as f:
         key = load(f)
 else:  # If it doesn't exists assume running on replit
     try:
