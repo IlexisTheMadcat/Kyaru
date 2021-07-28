@@ -49,7 +49,7 @@ DATA_DEFAULTS = {
         }
     },
     "GlobalEventData": {
-        "participants": ["userID"]
+        "participants": ["UID"]
     },
     "Tokens": {
         "BOT_TOKEN":"xxx",
