@@ -95,8 +95,7 @@ __`privacy/pcpl/terms/tos/legal`__
             inline=False,
             name="Required Permissions",
             value="""
-\- Permission 
-\- *Key Permission
+\- Administrator
 """
         ).set_author(
                 name=self.bot.user.name,
