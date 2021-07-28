@@ -64,14 +64,24 @@ class Commands(Cog):
         if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
         if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
 
-        await ctx.send(embed=Embed(
-            title="NH Rank",
-            description=f"You are currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
-                        f"You are {remaining_exp_to_next} EXP away from your next level.\n"
-                        f"\n"
-                        f"Current Spending EXP: 💲 {full_spending_exp}\n"
-                        f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
-        ))
+        if member.id == ctx.author.id:
+            await ctx.send(embed=Embed(
+                title="NH Rank",
+                description=f"You are currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
+                            f"You are {remaining_exp_to_next} EXP away from your next level.\n"
+                            f"\n"
+                            f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                            f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
+            ))
+        else:
+            await ctx.send(embed=Embed(
+                title="NH Rank",
+                description=f"{member.mention} is currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
+                            f"They are {remaining_exp_to_next} EXP away from their next level.\n"
+                            f"\n"
+                            f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                            f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
+            ))
 
     @command(name="setlevel", aliases=["setrank"])
     @has_permissions(administrator=True)
@@ -108,15 +118,15 @@ class Commands(Cog):
                 self.bot.defaults["UserData"]["UID"]
 
         cumulative_exp = 0
-
+        working_level = deepcopy(level)
         while True:
-            level -= 1
+            working_level -= 1
 
-            if level < 0: 
-                level += 1
+            if working_level < 0: 
+                working_level += 1
                 break
             else:
-                cumulative_exp += (self.a*level) + self.b
+                cumulative_exp += (self.a*(working_level+1)) + self.b
                 
             continue
 
@@ -200,7 +210,7 @@ class Commands(Cog):
             }
             
             ignored_channels = [
-                # 740923481939509258,  # c#Staff Room
+                740923481939509258,  # c#Staff Room
                 740676328935653406,  # c#Bulletin
                 761793288910143498,  # t#⚠️nsfw-bots
                 780654704362389535,  # c#Upstairs
@@ -360,7 +370,7 @@ class Commands(Cog):
                                 f"\n"
                                 f"Current Spending EXP: 💲 {full_spending_exp}\n"
                                 f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
-                    ).set_footer(text=f"You are {remaining_exp_to_next} away from the next level."
+                    ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
                     ).set_image(url=choice(level_up_gifs)))
 
 def setup(bot):
