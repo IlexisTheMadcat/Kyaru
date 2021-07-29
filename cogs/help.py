@@ -54,6 +54,9 @@ Return this user's rank in Neko Heaven. Leave blank to return your own.
 __`leadarboard/lead`__
 Return the top 10 ranked users in Neko Heaven.
 
+__`toggle_lowprofile_levelup/lp_levelup`__
+To
+
 __`avatar [user]`__
 Return this user's avatar. Leave blank to return your own.
 
