@@ -2,8 +2,8 @@
 from asyncio import sleep
 # from asyncio.exceptions import TimeoutError
 # from textwrap import shorten
-# from contextlib import suppress
-from random import choice
+from contextlib import suppress
+from random import choice, randint
 from copy import deepcopy
 
 from expiringdict import ExpiringDict
@@ -20,7 +20,7 @@ from utils.classes import Embed
 newline = "\n"
 
 
-class Commands(Cog):
+class Leveling(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.exp_cooldown = ExpiringDict(
@@ -30,9 +30,12 @@ class Commands(Cog):
         # ax+b
         self.a = 50
         self.b = 100
-        self.exp_gain = 50
-    
 
+    def exp_gain(self) -> float:
+        # Base gain is 50, but let's throw in a gamble.
+        whole = randint(20, 60)
+        tenth_decimal = randint(0, 9) / 10
+        return whole+tenth_decimal
 
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -59,12 +62,13 @@ class Commands(Cog):
         total_exp_to_next = (self.a*(current_level+1))+self.b
         remaining_exp_to_next = ((self.a*(current_level+1))+self.b) - cumulative_exp_copy
         obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
-
         full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"])
         full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"])
 
         if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
         if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+        if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+        if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
 
         if member.id == ctx.author.id:
             await ctx.send(embed=Embed(
@@ -354,7 +358,7 @@ class Commands(Cog):
                 # personal modifier
                 last_modifier = self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["personal_modifier"]
 
-                total = (((((self.exp_gain)*modifier_1)*modifier_2)*modifier_3)*last_modifier)
+                total = (((((self.exp_gain())*modifier_1)*modifier_2)*modifier_3)*last_modifier)
                 if not total:
                     self.exp_cooldown.pop(msg.author.id)
 
@@ -406,12 +410,13 @@ class Commands(Cog):
                 total_exp_to_next = (self.a*(new_level+1))+self.b
                 remaining_exp_to_next = ((self.a*(new_level+1))+self.b) - cumulative_exp_copy
                 obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
-                
                 full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"])
                 full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"])
 
                 if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
                 if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+                if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+                if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
                 
                 level_up_gifs = [
                     "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
@@ -426,6 +431,42 @@ class Commands(Cog):
                     "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
                 ]
 
+                if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
+                    num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
+                    with suppress(NotFound):
+                        await msg.add_reaction(self.bot.get_emoji(870143948750979072))
+                        await sleep(2)
+                        for number in str(new_level):
+                            await msg.add_reaction(num_to_emoji[new_level])
+
+                        await sleep(5)
+                        await msg.clear_reactions()
+
+                else:
+                    if not self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"]:
+                        await msg.channel.send(content=msg.author.mention, embed=Embed(
+                            description=f"You've leveled up! Thanks for spending your time with us.\n"
+                                        f"You are now level {new_level}! Have a headpat.\n"
+                                        f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
+                                        f"\n"
+                                        f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                                        f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
+                                        f"*Tip: You can hide this message in the future by going to <#740671751293501592> and typing `k!lp_levelup`.*"
+                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                            ).set_image(url=choice(level_up_gifs)))
+
+                        self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"] = True
+                    else:
+                        await msg.channel.send(content=msg.author.mention, embed=Embed(
+                            description=f"You've leveled up! Thanks for spending your time with us.\n"
+                                        f"You are now level {new_level}! Have a headpat.\n"
+                                        f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
+                                        f"\n"
+                                        f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                                        f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
+                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                            ).set_image(url=choice(level_up_gifs)))
+
                 try: reward = rewards[new_level]
                 except KeyError: reward = None
                 if reward:
@@ -434,26 +475,6 @@ class Commands(Cog):
                         raise NotFound("role not found.")
 
                     await msg.author.add_roles(role)
-
-                if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
-                    num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
-                    await msg.add_reaction(self.bot.get_emoji(870143948750979072))
-                    for number in str(new_level):
-                        await msg.add_reaction(num_to_emoji[new_level])
-
-                    await sleep(5)
-                    await msg.clear_reactions()
-
-                else:
-                    await msg.channel.send(content=msg.author.mention, embed=Embed(
-                        description=f"You've leveled up! Thanks for spending your time with us.\n"
-                                    f"You are now level {new_level}! Have a headpat.\n"
-                                    f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
-                                    f"\n"
-                                    f"Current Spending EXP: 💲 {full_spending_exp}\n"
-                                    f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
-                        ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
-                        ).set_image(url=choice(level_up_gifs)))
 
     @leaderboard.before_invoke
     async def placeholder_remove(self, ctx):
@@ -468,4 +489,4 @@ class Commands(Cog):
                 self.bot.user_data["UserData"].update({"UID":self.bot.defaults["UserData"]["UID"]})
 
 def setup(bot):
-    bot.add_cog(Commands(bot))
+    bot.add_cog(Leveling(bot))
