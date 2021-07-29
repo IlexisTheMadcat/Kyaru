@@ -50,13 +50,6 @@ class Commands(Cog):
     @command(aliases=["auto_emb"])
     @bot_has_permissions(send_messages=True)
     async def toggle_auto_embed(self, ctx):
-        if not str(ctx.author.id) in self.bot.user_data["UserData"]:
-            self.bot.user_data["UserData"][str(ctx.author.id)] = {}
-        if not "Settings" in self.bot.user_data["UserData"][str(ctx.author.id)]:
-            self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"] = {}
-        if not "auto_embed" in self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]:
-            self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"] = False
-
         self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"] = \
             not self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"]
 
