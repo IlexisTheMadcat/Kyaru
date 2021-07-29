@@ -1,5 +1,5 @@
 # import os
-# from asyncio import sleep
+from asyncio import sleep
 # from asyncio.exceptions import TimeoutError
 # from textwrap import shorten
 # from contextlib import suppress
@@ -32,6 +32,8 @@ class Commands(Cog):
         self.b = 100
         self.exp_gain = 50
     
+
+
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def check_rank(self, ctx, member: Member = None):
@@ -435,7 +437,7 @@ class Commands(Cog):
 
                 if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
                     num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
-                    await msg.add_reaction(self.bot.get_emoji(870095475561361458))
+                    await msg.add_reaction(self.bot.get_emoji(870143948750979072))
                     for number in str(new_level):
                         await msg.add_reaction(num_to_emoji[new_level])
 
