@@ -48,14 +48,8 @@ class MiscCommands(Cog):
 **{self.bot.description}**
 **Support server: [MechHub/DJ4wdsRYy2](https://discord.gg/DJ4wdsRYy2)**
 
-__`rank/level [user]`__
-Return this user's rank in Neko Heaven. Leave blank to return your own.
-
-__`leadarboard/lead`__
-Return the top 10 ranked users in Neko Heaven.
-
-__`toggle_lowprofile_levelup/lp_levelup`__
-To
+__`leveling_help/lvl_help`__
+Return a seperate help message for leveling commands and information.
 
 __`avatar [user]`__
 Return this user's avatar. Leave blank to return your own.
@@ -69,13 +63,13 @@ __`waifu2x/upscale`__
 *Use a popular AI-powered API to increase any image's resolution.
 ー Highly encouraged that you search google for higher resolutions and true detail by the artist.
 ー You may attach a file or append an IMAGE URL to the end of your message.
-ー **"This image was redrawn by a computer, results may vary from image to image."**
+ー Results are redrawn by a computer, results may vary from image to image.
 
 __`detect_nsfw/nsfw`__
 Detects the NSFW rating of the image you link or upload.
 ー Kyaru runs this command internally for all users who join Neko Heaven to scan their profile picture for NSFW content.
 ー NSFW is usually a score between 0-100%, with 60%> being considered as such.
-ー **"This test was done by a computer and may not be accurate."**
+ー Results are done by a computer and may not be accurate.
 
 __`welcome <user> [image_number (1-5)]`__
 Have the bot send a welcome message with the details of the specified user.
