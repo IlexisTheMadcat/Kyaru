@@ -25,7 +25,7 @@ class Commands(Cog):
         self.bot = bot
         self.exp_cooldown = ExpiringDict(
             max_len=float('inf'), 
-            max_age_seconds=1)
+            max_age_seconds=60)
 
         # ax+b
         self.a = 50
@@ -233,6 +233,14 @@ class Commands(Cog):
             title="Set Spending",
             description=f"✅ Set {member.mention}'s Spending EXP to {amount}."))
 
+    @command(aliases=["lp_lvlup"])
+    @bot_has_permissions(send_messages=True)
+    async def toggle_lowprofile_levelup(self, ctx):
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"] = \
+            not self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"]
+
+        await ctx.send(f'Toggled Low Profile Levelup indicator for you. It should now be set to {self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"]}.')
+
     @Cog.listener()
     async def on_message(self, msg):
         # Don't respond to bots.
@@ -417,15 +425,18 @@ class Commands(Cog):
 
                     await msg.author.add_roles(role)
 
-                await msg.channel.send(content=msg.author.mention, embed=Embed(
-                    description=f"You've leveled up! Thanks for spending your time with us.\n"
-                                f"You are now level {new_level}! Have a headpat.\n"
-                                f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
-                                f"\n"
-                                f"Current Spending EXP: 💲 {full_spending_exp}\n"
-                                f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
-                    ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
-                    ).set_image(url=choice(level_up_gifs)))
+                if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
+                    await msg.add_reaction(self.bot.get_emoji(870095475561361458))
+                else:
+                    await msg.channel.send(content=msg.author.mention, embed=Embed(
+                        description=f"You've leveled up! Thanks for spending your time with us.\n"
+                                    f"You are now level {new_level}! Have a headpat.\n"
+                                    f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
+                                    f"\n"
+                                    f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                                    f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
+                        ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                        ).set_image(url=choice(level_up_gifs)))
 
     @leaderboard.before_invoke
     async def placeholder_remove(self, ctx):
