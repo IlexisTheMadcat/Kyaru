@@ -88,7 +88,7 @@ class Commands(Cog):
     async def leaderboard(self, ctx):
         users = [(uid, self.bot.user_data["UserData"][uid]["Leveling"]["Cumulative EXP"]) for uid in self.bot.user_data["UserData"]]
         users.sort(key=lambda i: i[1])
-        users = users[-10:len(users)+1]
+        users = users[-15:len(users)]
         users.reverse()
 
 
@@ -128,17 +128,25 @@ class Commands(Cog):
                     continue
 
             member_rank_list.append(f"▄{member.mention}\n"
-                                    f"▀ Level {current_level} ({obtained_exp_to_next}/{total_exp_to_next} EXP)"
-            )
+                                    f"__▀ Level {current_level} ({obtained_exp_to_next}/{total_exp_to_next} EXP)__")
 
         await ctx.send(embed=Embed(
             title="Neko Heaven Leaderboard",
-            description=f"Here are the top 10 ranked users for this server:\n"
+            description=f"Here are the top 15 ranked users for this server:\n"
                         f"----------\n"
-                        f"\n"
-                        f"{newline.join(member_rank_list)}"
+        ).add_field(
+            name="**1-5**",
+            inline=True,
+            value=newline.join(member_rank_list[0:5])
+        ).add_field(
+            name="**6-10**",
+            inline=True,
+            value=newline.join(member_rank_list[5:10])
+        ).add_field(
+            name="**11-15**",
+            inline=True,
+            value=newline.join(member_rank_list[10:15])
         ))
-
 
     @command(aliases=["setlevel", "setrank", "sl", "sr"])
     @has_permissions(administrator=True)
@@ -233,7 +241,7 @@ class Commands(Cog):
             title="Set Spending",
             description=f"✅ Set {member.mention}'s Spending EXP to {amount}."))
 
-    @command(aliases=["lp_lvlup"])
+    @command(aliases=["lp_levelup"])
     @bot_has_permissions(send_messages=True)
     async def toggle_lowprofile_levelup(self, ctx):
         self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"] = \
