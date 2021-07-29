@@ -434,7 +434,14 @@ class Commands(Cog):
                     await msg.author.add_roles(role)
 
                 if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
+                    num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
                     await msg.add_reaction(self.bot.get_emoji(870095475561361458))
+                    for number in str(new_level):
+                        await msg.add_reaction(num_to_emoji[new_level])
+
+                    await sleep(5)
+                    await msg.clear_reactions()
+
                 else:
                     await msg.channel.send(content=msg.author.mention, embed=Embed(
                         description=f"You've leveled up! Thanks for spending your time with us.\n"
