@@ -33,8 +33,18 @@ DATA_DEFAULTS = {
         "UID": {  # User Settings
             "Settings": {
                 "auto_emb": "bool",
-                "lp_levelup": "bool"
+                # Whether a message is automatically reposted as an embed when a message link is sent.
+
+                "lp_levelup": "bool",
+                # Whether the bot should minimize the levelup message to reactions.
+
+                "NotificationsDue": {
+                    "LevelupMinimizeTip": False
+                }  # dict of str:bool
+                # A notification sent to users when they use a command for the first time.
+                # These are set to true after being executed. Resets by command.
             },
+
             "EventData": {
                 "points": 0,
             },
@@ -46,7 +56,8 @@ DATA_DEFAULTS = {
                 "Cumulative EXP": 0,
                 "Spending EXP": 0,
                 "inventory": []
-            }
+            },
+
         }
     },
     "GlobalEventData": {
