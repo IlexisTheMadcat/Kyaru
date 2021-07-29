@@ -33,9 +33,56 @@ class Leveling(Cog):
 
     def exp_gain(self) -> float:
         # Base gain is 50, but let's throw in a gamble.
-        whole = randint(20, 60)
+        whole = randint(30, 70)
         tenth_decimal = randint(0, 9) / 10
         return whole+tenth_decimal
+
+    @command(name="leveling_help", aliases=["lvl_help"])
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def leveling_help(self, ctx, member: Member = None):
+        await ctx.send(
+            embed=Embed(
+                title="Neko Heaven Leveling System",
+                description="""
+Dev Update:
+New or returning user? A new, custom leveling system has been implemented into Kyaru.
+You can find information further on in this embed. Kyaru will be speaking from here.
+---
+
+To begin leveling up, start chatting in some topical chats like <#741381152543211550>.
+When you earn your first levelup, I will send you a message detailing what you earned, your new level, and how much exp you need until the next level.
+
+**__Cumulative EXP__**
+`CuEXP` is what is used to determine your level and ranking in the server.
+You can earn CuEXP by chatting. The base CuEXP gain is around 40-60, but some channels and roles have modifiers. These "modify" the amount you earn.
+You can only gain CuEXP once every minute, so spamming is pointless and will result in proper discipline.
+**__Spending EXP__**
+`SpEXP` is the currency of the server. It is accumulated at the same rate as CuEXP.
+You can spend SpEXP in the <#870360906561904651>.
+
+**__Commands:__**
+__`rank/level [user]`__
+Return this user's rank in Neko Heaven. Leave blank to return your own.
+
+__`leadarboard/lead`__
+Return the top 10 ranked users in Neko Heaven.
+
+__`toggle_lowprofile_levelup/lp_levelup`__
+Turn the levelup message into a set of reactions.
+"""
+            ))
+
+    @command(name="purchase")
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def purchase_shop_item(self, ctx, *, item_name):
+        shop_channel = self.bot.get_channel(870360906561904651)
+        storefront = {
+            "CuEXP Booster 1.5x 20m": 1000,
+            "CuEXP Booster 2.0x 30m": 2000,
+            "CuEXP Booster 3.0x 30m": 3500,
+            "Temporary Mute 5m": 2500,
+            "Temporary Mute 10m": 5000
+        }
 
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -66,9 +113,13 @@ class Leveling(Cog):
         full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"])
 
         if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+        else: remaining_exp_to_next = round(remaining_exp_to_next, 1)
         if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+        else: obtained_exp_to_next = round(obtained_exp_to_next, 1)
         if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+        else: full_cumulative_exp = round(full_cumulative_exp, 1)
         if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
+        else: full_spending_exp = round(full_spending_exp, 1)
 
         if member.id == ctx.author.id:
             await ctx.send(embed=Embed(
@@ -76,7 +127,7 @@ class Leveling(Cog):
                 description=f"You are currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
                             f"You are {remaining_exp_to_next} EXP away from your next level.\n"
                             f"\n"
-                            f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                            f"Current Spending EXP: 💳 {full_spending_exp}\n"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
         else:
@@ -85,7 +136,7 @@ class Leveling(Cog):
                 description=f"{member.mention} is currently level {current_level} ({obtained_exp_to_next}/{total_exp_to_next}).\n"
                             f"They are {remaining_exp_to_next} EXP away from their next level.\n"
                             f"\n"
-                            f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                            f"Current Spending EXP: 💳 {full_spending_exp}\n"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
 
@@ -414,9 +465,13 @@ class Leveling(Cog):
                 full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"])
 
                 if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+                else: remaining_exp_to_next = round(remaining_exp_to_next, 1)
                 if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+                else: obtained_exp_to_next = round(obtained_exp_to_next, 1)
                 if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+                else: full_cumulative_exp = round(full_cumulative_exp, 1)
                 if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
+                else: full_spending_exp = round(full_spending_exp, 1)
                 
                 level_up_gifs = [
                     "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
@@ -442,6 +497,14 @@ class Leveling(Cog):
                         await sleep(5)
                         await msg.clear_reactions()
 
+                    return
+
+                try: reward = rewards[new_level]
+                except KeyError: reward = None
+                if reward:
+                    role = msg.guild.get_role(reward)
+                    if role: await msg.author.add_roles(role)
+
                 else:
                     if not self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"]:
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
@@ -449,7 +512,7 @@ class Leveling(Cog):
                                         f"You are now level {new_level}! Have a headpat.\n"
                                         f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
                                         f"\n"
-                                        f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                                        f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                                         f"*Tip: You can hide this message in the future by going to <#740671751293501592> and typing `k!lp_levelup`.*"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
@@ -462,19 +525,10 @@ class Leveling(Cog):
                                         f"You are now level {new_level}! Have a headpat.\n"
                                         f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
                                         f"\n"
-                                        f"Current Spending EXP: 💲 {full_spending_exp}\n"
+                                        f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
                             ).set_image(url=choice(level_up_gifs)))
-
-                try: reward = rewards[new_level]
-                except KeyError: reward = None
-                if reward:
-                    role = msg.guild.get_role(reward)
-                    if not role:
-                        raise NotFound("role not found.")
-
-                    await msg.author.add_roles(role)
 
     @leaderboard.before_invoke
     async def placeholder_remove(self, ctx):
