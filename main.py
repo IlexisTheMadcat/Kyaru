@@ -33,6 +33,7 @@ DATA_DEFAULTS = {
         "UID": {  # User Settings
             "Settings": {
                 "auto_emb": "bool",
+                "lp_levelup": "bool"
             },
             "EventData": {
                 "points": 0,
