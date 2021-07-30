@@ -145,6 +145,10 @@ class Bot(DiscordBot):
     def run(self, *args, **kwargs):
         print("[BOT INIT] Logging in with token...")
         super().run(self.auth["BOT_TOKEN"], *args, **kwargs)
+
+    async def on_message(self, msg):
+        """Disable primary Bot.process_commands listener for cogs to call individually."""
+        return
     
     async def on_error(self, event_name, *args, **kwargs):
         '''Error handler for Exceptions raised in events'''
