@@ -26,6 +26,7 @@ class Leveling(Cog):
         self.exp_cooldown = ExpiringDict(
             max_len=float('inf'), 
             max_age_seconds=60)
+        self.temp_boosted = {}  # UID: (amount)
 
         # ax+b
         self.a = 50
@@ -33,7 +34,7 @@ class Leveling(Cog):
 
     def exp_gain(self) -> float:
         # Base gain is 50, but let's throw in a gamble.
-        whole = randint(30, 70)
+        whole = randint(40, 60)
         tenth_decimal = randint(0, 9) / 10
         return whole+tenth_decimal
 
@@ -76,13 +77,29 @@ Turn the levelup message into a set of reactions.
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def purchase_shop_item(self, ctx, *, item_name):
         shop_channel = self.bot.get_channel(870360906561904651)
+        
         storefront = {
-            "CuEXP Booster 1.5x 20m": 1000,
-            "CuEXP Booster 2.0x 30m": 2000,
-            "CuEXP Booster 3.0x 30m": 3500,
+            "Cumulative EXP Booster 1.5x 20m": 1000,
+            "Cumulative EXP Booster 2.0x 30m": 2000,
+            "Cumulative EXP Booster 3.0x 30m": 3500,
             "Temporary Mute 5m": 2500,
             "Temporary Mute 10m": 5000
         }
+
+        spending_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"])
+        if not item_name in storefront:
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item does not exist.\nNote: Item names are case sensitive."))
+            return
+
+        if spending_exp_copy < storefront[item_name]:
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="You do not have enough Spending EXP to purchase that."))
+            return
+
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].append(item_name)
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"] -= storefront[item_name]
+        await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased {item_name}.\nIt has been added to your inventory."))
+
+
 
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -308,6 +325,15 @@ Turn the levelup message into a set of reactions.
 
     @Cog.listener()
     async def on_message(self, msg):
+        if msg.channel.id == 870360906561904651:
+            if msg.author.id == self.bot.user.id:
+                await sleep(5)
+                await msg.delete()
+            else:
+                await msg.delete()
+
+            return
+
         # Don't respond to bots.
         if msg.author.bot:
             return
@@ -492,7 +518,7 @@ Turn the levelup message into a set of reactions.
                         await msg.add_reaction(self.bot.get_emoji(870143948750979072))
                         await sleep(2)
                         for number in str(new_level):
-                            await msg.add_reaction(num_to_emoji[new_level])
+                            await msg.add_reaction(num_to_emoji[int(number)])
 
                         await sleep(5)
                         await msg.clear_reactions()
