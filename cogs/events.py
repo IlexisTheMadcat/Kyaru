@@ -53,11 +53,14 @@ class Events(Cog):
         if msg.author.bot:
             return
 
-        # Check if the message is a command. 
-        # Terminates the event if so, so the command can run.
-        verify_command = await self.bot.get_context(msg)
-        if verify_command.valid:
+        # Checks if the message is any attempted command.
+        if msg.content.startswith(self.bot.command_prefix) and not msg.content.startswith(self.bot.command_prefix+" "):
+            if str(msg.author.id) not in self.bot.user_data["UserData"]:
+                self.bot.user_data["UserData"][str(msg.author.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
+                
             self.bot.inactive = 0
+        
+            await self.bot.process_commands(msg)
             return
 
         # Upload images only in these channels
@@ -74,12 +77,12 @@ class Events(Cog):
                         ), delete_after=5)
 
                     elif len(find_url) == 1:
-                        if not find_url[0].endswith(("jpg", "jpeg", "png", "gif")):
+                        if not find_url[0].endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
                             print(find_url)
                             await msg.delete()
                             await msg.channel.send(content=msg.author.mention, embed=Embed(
                                 title="Extension Not Allowed",
-                                description="URLs must end in the following: [jpg, jpeg, png, gif]",
+                                description="URLs must end in any of the following: [.jpg, .jpeg, .png, .gif, .mp4]",
                             ), delete_after=5)
                 else:
                     await msg.delete()
@@ -87,6 +90,16 @@ class Events(Cog):
                         title="Images only",
                         description="You can only upload images in this channel.\n"
                                     "You can comment on images by sending its **message** URL in <#742571100009136148>"
+                        ), delete_after=5)
+            
+            else:
+                for i in msg.attachments:
+                    if not str(i.url).endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
+                        print(find_url)
+                        await msg.delete()
+                        await msg.channel.send(content=msg.author.mention, embed=Embed(
+                            title="Extension Not Allowed",
+                            description="Your file names must end in any of the following: [.jpg, .jpeg, .png, .gif, .mp4]",
                         ), delete_after=5)
 
         # Upscale media uploads in these categories
