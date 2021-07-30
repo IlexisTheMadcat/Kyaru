@@ -32,10 +32,10 @@ DATA_DEFAULTS = {
     "UserData": {
         "UID": {  # User Settings
             "Settings": {
-                "auto_emb": "bool",
+                "auto_emb": False,
                 # Whether a message is automatically reposted as an embed when a message link is sent.
 
-                "lp_levelup": "bool",
+                "lp_levelup": False,
                 # Whether the bot should minimize the levelup message to reactions.
 
                 "NotificationsDue": {
