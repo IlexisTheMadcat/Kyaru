@@ -55,7 +55,7 @@ DATA_DEFAULTS = {
                 "personal_modifier": 1.00,
                 "Cumulative EXP": 0,
                 "Spending EXP": 0,
-                "inventory": []
+                "inventory": [0]
             },
 
         }
