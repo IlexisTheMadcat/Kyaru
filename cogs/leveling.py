@@ -1,6 +1,6 @@
 # import os
 from asyncio import sleep
-# from asyncio.exceptions import TimeoutError
+from asyncio.exceptions import TimeoutError
 # from textwrap import shorten
 from contextlib import suppress
 from random import choice, randint
@@ -26,15 +26,24 @@ class Leveling(Cog):
         self.exp_cooldown = ExpiringDict(
             max_len=float('inf'), 
             max_age_seconds=60)
-        self.temp_boosted = {}  # UID: (amount)
+        self.temp_boosted = {}  # {int(UID): int(modifier)}
 
         # ax+b
         self.a = 50
         self.b = 100
 
+        # shop
+        self.storefront = {
+            "Cumulative EXP Booster +0.5x 20m": 1000,
+            "Cumulative EXP Booster +1.0x 20m": 2000,
+            "Cumulative EXP Booster +2.0x 30m": 3500,
+            "Temporary Mute 5m": 2500,
+            "Temporary Mute 10m": 5000
+        }
+
     def exp_gain(self) -> float:
         # Base gain is 50, but let's throw in a gamble.
-        whole = randint(40, 60)
+        whole = randint(20, 40)
         tenth_decimal = randint(0, 9) / 10
         return whole+tenth_decimal
 
@@ -55,7 +64,7 @@ When you earn your first levelup, I will send you a message detailing what you e
 
 **__Cumulative EXP__**
 `CuEXP` is what is used to determine your level and ranking in the server.
-You can earn CuEXP by chatting. The base CuEXP gain is around 40-60, but some channels and roles have modifiers. These "modify" the amount you earn.
+You can earn CuEXP by chatting. The base CuEXP gain is around 20-40, but some channels and roles have modifiers. These "modify" the amount you earn.
 You can only gain CuEXP once every minute, so spamming is pointless and will result in proper discipline.
 **__Spending EXP__**
 `SpEXP` is the currency of the server. It is accumulated at the same rate as CuEXP.
@@ -78,26 +87,109 @@ Turn the levelup message into a set of reactions.
     async def purchase_shop_item(self, ctx, *, item_name):
         shop_channel = self.bot.get_channel(870360906561904651)
         
-        storefront = {
-            "Cumulative EXP Booster 1.5x 20m": 1000,
-            "Cumulative EXP Booster 2.0x 30m": 2000,
-            "Cumulative EXP Booster 3.0x 30m": 3500,
-            "Temporary Mute 5m": 2500,
-            "Temporary Mute 10m": 5000
-        }
-
         spending_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"])
-        if not item_name in storefront:
+        if not item_name in self.storefront:
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item does not exist.\nNote: Item names are case sensitive."))
             return
 
-        if spending_exp_copy < storefront[item_name]:
+        if spending_exp_copy < self.storefront[item_name]:
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="You do not have enough Spending EXP to purchase that."))
             return
 
         self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].append(item_name)
-        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"] -= storefront[item_name]
-        await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased {item_name}.\nIt has been added to your inventory."))
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"] -= self.storefront[item_name]
+        await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased `{item_name}`.\nIt has been added to your inventory."))
+
+    @command(name="use")
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def use_shop_item(self, ctx, *, item_name):
+        if item_name not in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"]:
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is not in your inventory.\nNote: Item names are case sensitive."))
+            return
+
+        if item_name in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"] and item_name not in self.storefront:
+            self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is depreciated and has been removed from your inventory."))
+            return
+
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
+        
+        if item_name == "Cumulative EXP Booster +0.5x 20m":
+            if ctx.author.id in self.bot.timed_shop_items["modifiers"]:
+                await ctx.send(
+                    content=ctx.author.mention, 
+                    embed=Embed(
+                        color=0xff0000, 
+                        description="You already have an EXP boost active! You will get a DM when it expires."
+                                    f"If you wish to cancel it, type `k-cancel_boost` anywhere I can see you."))
+                return
+
+            self.bot.timed_shop_items["modifiers"].append(ctx.author.id)
+            self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] += 0.50
+            await ctx.send(content=ctx.author.mention, embed=Embed(description="Used `Cumulative EXP Booster +0.5x 20m`. Enjoy your EXP boost!"))
+            
+            try: m = await self.bot.wait_for("message", timeout=1200, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_boost")
+            except TimeoutError:
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 0.50
+                await ctx.author.send(embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +0.5x 20m` has expired."))
+                return
+            else: 
+                await ctx.send(embed=Embed(description="Canceled `Cumulative EXP Booster +0.5x 20m`."))
+                return
+            
+
+        elif item_name == "Cumulative EXP Booster +1.0x 20m":
+            if ctx.author.id in self.bot.timed_shop_items["modifiers"]:
+                await ctx.send(
+                    content=ctx.author.mention, 
+                    embed=Embed(
+                        color=0xff0000, 
+                        description="You already have an EXP boost active! You will get a DM when it expires."
+                                    f"If you wish to cancel it, type `k-cancel_boost` anywhere I can see you."))
+                return
+
+            self.bot.timed_shop_items["modifiers"].append(ctx.author.id)
+            self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] += 1.00
+            await ctx.send(content=ctx.author.mention, embed=Embed(description="Used `Cumulative EXP Booster +1.0x 20m`. Enjoy your EXP boost!"))
+            
+            try: m = await self.bot.wait_for("message", timeout=1200, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_boost")
+            except TimeoutError:
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 1.00
+                await ctx.author.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +1.0x 20m` has expired."))
+                return
+            else: 
+                await ctx.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +1.0x 20m`."))
+                return
+
+        elif item_name == "Cumulative EXP Booster +2.0x 30m":
+            if ctx.author.id in self.bot.timed_shop_items["modifiers"]:
+                await ctx.send(
+                    content=ctx.author.mention, 
+                    embed=Embed(
+                        color=0xff0000, 
+                        description="You already have an EXP boost active! You will get a DM when it expires."
+                                    f"If you wish to cancel it, type `k-cancel_boost` anywhere I can see you."))
+                return
+
+            self.bot.timed_shop_items["modifiers"].append(ctx.author.id)
+            self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] += 2.00
+            await ctx.send(content=ctx.author.mention, embed=Embed(description="Used `Cumulative EXP Booster +2.0x 30m`. Enjoy your EXP boost!"))
+
+            try: m = await self.bot.wait_for("message", timeout=1200, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_boost")
+            except TimeoutError:
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 2.00
+                await ctx.author.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +2.0x 30m` has expired."))
+                return
+            else: 
+                await ctx.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +2.0x 30m`."))
+                return
+
+        else:
+            await ctx.send(content=ctx.author.mention, embed=Embed(description="That item doesn't have a use yet. ***Yet***."))
+            return
 
 
 
@@ -165,7 +257,6 @@ Turn the levelup message into a set of reactions.
         users = users[-15:len(users)]
         users.reverse()
 
-
         member_rank_list = []
         for uid, exp in users:
             # Working copy of new cumulative exp
@@ -192,7 +283,13 @@ Turn the levelup message into a set of reactions.
             full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(uid)]["Leveling"]["Spending EXP"])
 
             if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+            else: remaining_exp_to_next = round(remaining_exp_to_next, 1)
             if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+            else: obtained_exp_to_next = round(obtained_exp_to_next, 1)
+            if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+            else: full_cumulative_exp = round(full_cumulative_exp, 1)
+            if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
+            else: full_spending_exp = round(full_spending_exp, 1)
 
             member = ctx.guild.get_member(int(uid))
             if not member:
