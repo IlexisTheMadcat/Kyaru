@@ -39,7 +39,6 @@ class Leveling(Cog):
             "Cumulative EXP Booster +1.0x 20m": 2000,
             "Cumulative EXP Booster +2.0x 30m": 3500,
             "Temporary Mute 5m": 2500,
-            "Temporary Mute 10m": 5000
         }
 
     def exp_gain(self) -> float:
