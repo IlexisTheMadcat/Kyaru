@@ -1,4 +1,5 @@
 # import os
+import re
 from asyncio import sleep
 from asyncio.exceptions import TimeoutError
 # from textwrap import shorten
@@ -111,8 +112,6 @@ Turn the levelup message into a set of reactions.
             self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is depreciated and has been removed from your inventory."))
             return
-
-        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
         
         if item_name == "Cumulative EXP Booster +0.5x 20m":
             if ctx.author.id in self.bot.timed_shop_items["modifiers"]:
@@ -135,7 +134,9 @@ Turn the levelup message into a set of reactions.
                 await ctx.author.send(embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +0.5x 20m` has expired."))
                 return
             else: 
-                await ctx.send(embed=Embed(description="Canceled `Cumulative EXP Booster +0.5x 20m`."))
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 0.50
+                await m.channel.send(embed=Embed(description="Canceled `Cumulative EXP Booster +0.5x 20m`."))
                 return
             
 
@@ -160,7 +161,9 @@ Turn the levelup message into a set of reactions.
                 await ctx.author.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +1.0x 20m` has expired."))
                 return
             else: 
-                await ctx.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +1.0x 20m`."))
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 1.00
+                await m.channel.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +1.0x 20m`."))
                 return
 
         elif item_name == "Cumulative EXP Booster +2.0x 30m":
@@ -177,21 +180,91 @@ Turn the levelup message into a set of reactions.
             self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] += 2.00
             await ctx.send(content=ctx.author.mention, embed=Embed(description="Used `Cumulative EXP Booster +2.0x 30m`. Enjoy your EXP boost!"))
 
-            try: m = await self.bot.wait_for("message", timeout=1200, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_boost")
+            try: m = await self.bot.wait_for("message", timeout=1800, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_boost")
             except TimeoutError:
                 self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
                 self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 2.00
                 await ctx.author.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="Your `Cumulative EXP Booster +2.0x 30m` has expired."))
                 return
             else: 
-                await ctx.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +2.0x 30m`."))
+                self.bot.timed_shop_items["modifiers"].remove(ctx.author.id)
+                self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["personal_modifier"] -= 2.00
+                await m.channel.send(content=ctx.author.mention, embed=Embed(description="Canceled `Cumulative EXP Booster +2.0x 30m`."))
                 return
 
+        elif item_name == "Temporary Mute 5m":
+            if ctx.author.id in self.bot.timed_shop_items["temp_mutes"]:
+                await ctx.send(content=ctx.author.mention, 
+                    embed=Embed(
+                        color=0xff0000, 
+                        description="To prevent abuse, you cannot use multiple mutes at once.\n"
+                                    "If you wish to cancel it, type `k-cancel_mute` anywhere I can see you."))
+                return
+
+            await ctx.send(f"{ctx.author.mention}", embed=Embed(description="This shop item is used in a DM. Please check it."))
+            conf = await ctx.author.send(embed=Embed(description="Mention the user (or type/paste UID) you want to temporarily mute for 5 minutes, or type `k-cancel` to cancel"))
+
+            while True:
+                try: 
+                    m = await self.bot.wait_for("message", timeout=30, check=lambda m: m.author.id==ctx.author.id and m.channel.id==conf.channel.id)
+                
+                except TimeoutError: 
+                    await conf.delete()
+                    return
+
+                else:
+                    if m.content == "k-cancel": 
+                        await ctx.author.send(embed=Embed(description="Operation cancelled."))
+                        return
+
+                    uid = re.search(r"[0-9]{17}[0-9]*", m.content)
+                    if uid: uid = uid.group()
+                    else: continue
+                    
+                    member = ctx.guild.get_member(int(uid))
+                    if member: 
+                        break
+
+                    try: member = ctx.guild.fetch_member(int(uid))
+                    except NotFound: 
+                        continue
+                    else:
+                        break
+
+            if 741431440490627234 in [role.id for role in member.roles]:
+                await ctx.author.send(embed=Embed(color=0xff0000, description="That member is already muted.\nOperation cancelled."))
+                return
+            
+            if 767792345239519254 in [role.id for role in member.roles] or \
+                740680553195372554 in [role.id for role in member.roles]:
+                await ctx.author.send(embed=Embed(color=0xff0000, description="Seriously?\nOperation cancelled."))
+                return
+
+            muted = ctx.guild.get_role(741431440490627234)
+            
+            self.bot.timed_shop_items["temp_mutes"].update({ctx.author.id: member.id})
+            await member.add_roles(muted)
+            await ctx.author.send(content=ctx.author.mention, embed=Embed(description=f"Muted {member} for 5 minutes."))
+            await member.send(f"You've been muted by {ctx.author.mention} in Neko Heaven for 5 minutes.\n"
+                              f"This was done via a shop item used by the member.")
+            
+            try: m = await self.bot.wait_for("message", timeout=300, check=lambda m: m.author.id==ctx.author.id and m.content=="k-cancel_mute")
+            except TimeoutError:
+                self.bot.timed_shop_items["temp_mutes"].pop(ctx.author.id)
+                await member.remove_roles(muted)
+                await ctx.author.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="Your `Temporary Mute 5m` has expired."))
+                await member.send("Your mute has ended.")
+            else: 
+                self.bot.timed_shop_items["temp_mutes"].pop(ctx.author.id)
+                await member.remove_roles(muted)
+                await m.channel.send(content=ctx.author.mention, embed=Embed(description="Canceled `Temporary Mute 5m`."))
+                await member.send("Your mute has ended early.")
+            
         else:
-            await ctx.send(content=ctx.author.mention, embed=Embed(description="That item doesn't have a use yet. ***Yet***."))
+            await ctx.send(content=ctx.author.mention, embed=Embed(description="That item doesn't have a use yet."))
             return
 
-
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
 
     @command(name="rank", aliases=["level"])
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -442,7 +515,7 @@ Turn the levelup message into a set of reactions.
             self.bot.inactive = 0
             return
 
-        if msg.guild.id == 740662779106689055:
+        if msg.guild and msg.guild.id == 740662779106689055:
             rewards = {
                 1:  851225537165918259,  # r@Interested
                 3:  851236641531363338,  # r@Media Perms
