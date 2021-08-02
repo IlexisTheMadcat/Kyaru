@@ -65,7 +65,7 @@ class Events(Cog):
 
         # Upload images only in these channels
         if msg.guild and msg.channel.id in \
-            [866172671544524830, 865857091246751775]:
+            [866172671544524830, 870342656314736720, 815027417399558154]:
             if not msg.attachments:
                 find_url = re.findall(r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""", msg.content)
                 if find_url:
@@ -78,7 +78,6 @@ class Events(Cog):
 
                     elif len(find_url) == 1:
                         if not find_url[0].endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
-                            print(find_url)
                             await msg.delete()
                             await msg.channel.send(content=msg.author.mention, embed=Embed(
                                 title="Extension Not Allowed",
@@ -95,7 +94,6 @@ class Events(Cog):
             else:
                 for i in msg.attachments:
                     if not str(i.url).endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
-                        print(find_url)
                         await msg.delete()
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
                             title="Extension Not Allowed",
@@ -483,59 +481,6 @@ class Events(Cog):
                 else:
                     await msg.clear_reactions()
                     await conf.delete()
-
-        # Automate image-help purging
-        if not msg.author.bot and \
-            msg.channel.id == 740725402506494072:
-
-            if self.bot.thread_active:
-                return
-            
-            if not msg.attachments:
-                with suppress(NotFound):
-                    await msg.delete()
-
-                await msg.channel.send(
-                    content=msg.author.mention,
-                    embed=Embed(
-                        color=0xff0000,
-                        description="Please attach the image you are asking about.\n"
-                                    "A mod or perhaps a veteran member will assist you."),
-                delete_after=5)
-                return
-            
-            self.bot.thread_active = msg.author.id
-            await msg.channel.send(
-                content=msg.author.mention,
-                embed=Embed(
-                    title="Thread created.",
-                    description="If your question about this image has been answered, please send `-close` in chat to clear.\n"
-                                "Otherwise, inactivity (180s) will purge this channel automatically."))
-            
-            messages_sent = 1
-            while True:
-                try:
-                    help_resp = await self.bot.wait_for("message", timeout=180, 
-                        check=lambda m: m.channel.id == 740725402506494072)
-                except TimeoutError:
-                    while messages_sent > 0:
-                        await msg.channel.purge()
-                        messages_sent -= 100
-                    
-                    self.bot.thread_active = None
-                    return
-                
-                else:
-                    if help_resp.content == "-close" and (msg.author.id == help_resp.author.id or help_resp.author.permissions_in(msg.channel).manage_messages):
-                        while messages_sent > 0:
-                            await help_resp.channel.purge()
-                            messages_sent -= 100
-
-                        self.bot.thread_active = None
-                        return
-                    
-                    messages_sent += 1
-                    continue
 
         # Allow sniped users to protect their message from Dank Memer
         if (msg.content.lower().startswith("pls snipe") or \
