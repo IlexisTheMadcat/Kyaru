@@ -141,9 +141,12 @@ class Bot(DiscordBot):
 
         # Container for timed shop items.
         # The command that updates this dictionary will control how long items are in it.
-        # modifiers: {ctx.author.id: mod_amount}
-        # temp_mutes: {member.id: ctx.author.id}
-        self.timed_shop_items = {"modifiers":{}, "temp_mutes":{}}
+        # modifiers: [ctx.author.id]
+        # temp_mutes: {ctx.author.id: member.id}
+        self.timed_shop_items = {"modifiers":[], "temp_mutes":[]}
+
+        # User IDs that are using the shop. Prevents API abuse and stacking requests.
+        self.using_shop = list()
 
         # Load bot arguments into __init__
         super().__init__(*args, **kwargs)
