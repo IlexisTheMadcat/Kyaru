@@ -877,11 +877,12 @@ class Events(Cog):
                 await pos.edit(nick=pre.nick)
                 self.bot.pause_member_update.remove(pos.id)
 
-                await pos.send(embed=Embed(
-                    color=0xFFBF00,
-                    title="Warning",
-                    description="I understand you want to change your nickname in Neko Heaven, however nickname changes are now enforced by command.\n"
-                                "If you want to change your nickname, please run `k!nick <new nick>` in <#740671751293501592>.\n"))
+                with surpress(Forbidden):
+                    await pos.send(embed=Embed(
+                        color=0xFFBF00,
+                        title="Warning",
+                        description="I understand you want to change your nickname in Neko Heaven, however nickname changes are now enforced by command.\n"
+                                    "If you want to change your nickname, please run `k!nick <new nick>` in <#740671751293501592>.\n"))
     
     @Cog.listener()
     async def on_user_update(self, pre, pos):
