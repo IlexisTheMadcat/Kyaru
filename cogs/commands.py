@@ -300,11 +300,9 @@ class Commands(Cog):
             await ctx.send("You're kidding, right?")
             return
 
-        conf = await ctx.author.send(
+        conf = await ctx.send(
             "Your nickname for Neko Heaven was submitted.\n"
             "This message will be edited with the status.")
-        
-        await ctx.message.add_reaction("👌")
         
         requests = await self.bot.fetch_channel(835610993178181682)  #approve-nicknames
         emb = Embed(
@@ -342,7 +340,6 @@ class Commands(Cog):
                 emb.set_footer(text=f"Approved by {u} ({u.id})")
                 await control.edit(embed=emb)
                 
-                await ctx.message.add_reaction("✅")
                 await conf.edit(content="Your nickname request was approved and changed accordingly.")
                 return
             
