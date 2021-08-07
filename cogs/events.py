@@ -53,13 +53,10 @@ class Events(Cog):
         if msg.author.bot:
             return
 
+        # For this bot, user data is generated on member join.
         # Checks if the message is any attempted command.
-        if msg.content.startswith(self.bot.command_prefix) and not msg.content.startswith(self.bot.command_prefix+" "):
-            if str(msg.author.id) not in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"][str(msg.author.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
-                
+        if msg.content.startswith(self.bot.command_prefix) and not msg.content.startswith(self.bot.command_prefix+" "):  
             self.bot.inactive = 0
-        
             await self.bot.process_commands(msg)
             return
 
@@ -826,6 +823,9 @@ class Events(Cog):
 
             self.just_joined.update({str(member.id):welcome_msg})
 
+            if str(member.id) not in self.bot.user_data["UserData"]:
+                self.bot.user_data["UserData"][str(member.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
+
         elif member.guild.id == 740662779106689055 and member.bot:
             general = self.bot.get_channel(741381152543211550)
             
@@ -840,6 +840,9 @@ class Events(Cog):
     @Cog.listener()
     async def on_member_remove(self, member):
         if member.guild.id == 740662779106689055:
+            if str(member.id) in self.bot.user_data["UserData"]:
+                self.bot.user_data["UserData"].pop(str(member.id))
+
             general = self.bot.get_channel(741381152543211550)
 
             if str(member.id) in self.just_joined:

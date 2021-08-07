@@ -42,7 +42,7 @@ class Leveling(Cog):
         }
 
     def exp_gain(self) -> float:
-        # Base gain is 50, but let's throw in a gamble.
+        # Base gain is 30, but let's throw in a gamble.
         whole = randint(20, 40)
         tenth_decimal = randint(0, 9) / 10
         return whole+tenth_decimal
@@ -326,7 +326,7 @@ Turn the levelup message into a set of reactions.
     async def leaderboard(self, ctx):
         users = [(uid, self.bot.user_data["UserData"][uid]["Leveling"]["Cumulative EXP"]) for uid in self.bot.user_data["UserData"]]
         users.sort(key=lambda i: i[1])
-        users = users[-15:len(users)]
+        users = users[-10:len(users)]
         users.reverse()
 
         member_rank_list = []
@@ -385,10 +385,6 @@ Turn the levelup message into a set of reactions.
             name="**6-10**",
             inline=True,
             value=newline.join(member_rank_list[5:10])
-        ).add_field(
-            name="**11-15**",
-            inline=True,
-            value=newline.join(member_rank_list[10:15])
         ))
 
     @command(aliases=["setlevel", "setrank", "sl", "sr"])
@@ -609,10 +605,6 @@ Turn the levelup message into a set of reactions.
                     self.exp_cooldown.pop(msg.author.id)
 
                 return total
-
-            if str(msg.author.id) not in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"][str(msg.author.id)] = \
-                    self.bot.defaults["UserData"]["UID"]
 
             # Check for level up
             # Working copy of current cumulative exp
