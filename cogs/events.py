@@ -74,6 +74,7 @@ class Events(Cog):
                         ), delete_after=5)
 
                     elif len(find_url) == 1:
+                        await msg.delete()
                         if not find_url[0].endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
                             await msg.delete()
                             await msg.channel.send(content=msg.author.mention, embed=Embed(
@@ -101,6 +102,7 @@ class Events(Cog):
         if msg.guild and msg.channel.category and msg.channel.category.id in \
             [740663474568560671, 740663386500628570]:
             if not msg.attachments:
+                await msg.delete()
                 await msg.channel.send(content=msg.author.mention, embed=Embed(
                     title="Images only",
                     description="You can only upload images in this channel.\n"
