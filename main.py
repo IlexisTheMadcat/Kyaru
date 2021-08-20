@@ -10,6 +10,7 @@ from discord import __version__, Activity, ActivityType, Intents
 from discord.enums import Status
 from discord.permissions import Permissions
 from discord.utils import oauth_url
+from discord.ext.commands import ExtensionAlreadyLoaded
 
 from utils.classes import Bot
 from utils.errorlog import ErrorLog
