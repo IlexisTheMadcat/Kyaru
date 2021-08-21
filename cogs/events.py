@@ -225,14 +225,14 @@ class Events(Cog):
                     width, height = img.size  # Store original size
                     
                     # If smaller dimension is less than 300px, deny upload. 
-                    # # Image will look distorted.
+                    # Image will look distorted.
                     if ((width > height and height < 300) or \
                         (height >= width and width < 300)):
                         await msg.delete()
                         await conf.edit(
                             embed=Embed(
                                 color=0xff0000,
-                                description=f":x: That image is too small! Please use [Google Images](https://images.google.com/) to check for a larger resolution."
+                                description=f"❌ That image is too small! Please use [Google Images](https://images.google.com/) or [SauceNAO](https://saucenao.com) to check for a larger resolution."
                             ), delete_after=5)
 
                         return
@@ -290,7 +290,7 @@ class Events(Cog):
                                 await conf.edit(
                                     embed=Embed(
                                         color=0xff0000,
-                                        description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                        description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
                                                     f"`{r.json['err']}`"
                                     ), delete_after=5)
 
@@ -323,7 +323,7 @@ class Events(Cog):
                             await conf.edit(
                                 embed=Embed(
                                     color=0xff0000,
-                                    description=f":x: Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                    description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
                                                 f"Error details: `Retries exhausted. Will not continue.`"
                                 ), delete_after=5)
                             
@@ -341,7 +341,7 @@ class Events(Cog):
 
                     await conf.edit( 
                         embed=Embed(
-                            description=":x: Cancelled operation."
+                            description="❌ Operation cancelled."
                     ), delete_after=2)
 
                     return
@@ -612,7 +612,7 @@ class Events(Cog):
                             content=member.mention,
                             embed=Embed(
                                 title="Moving Post", 
-                                description=f":x: Timed out.",
+                                description=f"❌ Timed out.",
                                 color=0x32d17f
                             ).set_footer(text=Embed.Empty))
                 
@@ -631,7 +631,7 @@ class Events(Cog):
                             await bot_spam.send(
                                 content=user.mention,
                                 embed=Embed(
-                                    description=f":x: No channel mentioned. Please try again.",
+                                    description=f"❌ No channel mentioned. Please try again.",
                                     color=0x32d17f
                                 ), delete_after=5)
 
@@ -647,7 +647,7 @@ class Events(Cog):
                                 await bot_spam.send(
                                     content=user.mention,
                                     embed=Embed(
-                                        description=f":x: Invalid channel mentioned. Please try again.",
+                                        description=f"❌ Invalid channel mentioned. Please try again.",
                                         color=0x32d17f
                                     ), delete_after=5)
 
@@ -658,7 +658,7 @@ class Events(Cog):
                             await bot_spam.send(
                                 content=user.mention,
                                 embed=Embed(
-                                    description=f":x: No Neko Heaven media channel mentioned. Please try again.",
+                                    description=f"❌ No Neko Heaven media channel mentioned. Please try again.",
                                     color=0x32d17f
                                 ), delete_after=5)
 
@@ -668,7 +668,7 @@ class Events(Cog):
                             await bot_spam.send(
                                 content=user.mention,
                                 embed=Embed(
-                                    description=f":x: The source and destination are the same. Please try again.",
+                                    description=f"❌ The source and destination are the same. Please try again.",
                                     color=0x32d17f
                                 ), delete_after=5)
 
