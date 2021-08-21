@@ -13,11 +13,7 @@ from discord.errors import NotFound
 from discord.ext.commands import cooldown, BucketType, is_owner
 from discord.ext.commands.cog import Cog
 from discord.ext.commands.context import Context
-from discord.ext.commands.core import (
-    bot_has_permissions, 
-    has_permissions, 
-    command
-)
+from discord.ext.commands.core import bot_has_permissions, has_permissions, command
 
 from utils.classes import Embed
 
@@ -53,7 +49,8 @@ class Commands(Cog):
         self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"] = \
             not self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"]
 
-        await ctx.send(f'Toggled Auto-embed for you. It should now be set to {self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["auto_embed"]}.')
+        await ctx.send(embed=Embed(
+            description=f"✅ Auto-emb is now `{'On' if self.bot.user_data['UserData'][str(ctx.author.id)]['Settings']['auto_embed'] else 'Off'}`."))
 
     @command(aliases=["upscale"])
     @bot_has_permissions(send_messages=True)
@@ -64,7 +61,7 @@ class Commands(Cog):
                 await ctx.send("Please only attach one image at a time.")
                 return
             
-            conf = await ctx.channel.send("<a:loading:813237675553062954> Please wait, waiting for Waifu2x to respond...")
+            conf = await ctx.channel.send("<a:loading:813237675553062954> Please wait...")
             attach_data = await ctx.message.attachments[0].read()
 
             img = Image.open(BytesIO(attach_data)).convert("RGBA")
