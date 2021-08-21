@@ -10,11 +10,9 @@ from copy import deepcopy
 from expiringdict import ExpiringDict
 from discord import Member, Forbidden, NotFound
 from discord.ext.commands.cog import Cog
-from discord.ext.commands.core import (
-    has_permissions, 
-    bot_has_permissions, 
-    command
-)
+from discord.ext.commands.core import has_permissions, bot_has_permissions, command
+from discord.ext.tasks import loop
+from discord.utils import get
 
 from utils.classes import Embed
 
@@ -29,16 +27,66 @@ class Leveling(Cog):
             max_age_seconds=60)
         self.temp_boosted = {}  # {int(UID): int(modifier)}
 
-        # ax+b
+        # For use in an ax+b equation
         self.a = 50
         self.b = 100
 
-        # shop
+        # Shop; {"Item Name": int(Cost)}
         self.storefront = {
             "Cumulative EXP Booster +0.5x 20m": 1000,
             "Cumulative EXP Booster +1.0x 20m": 2000,
             "Cumulative EXP Booster +2.0x 30m": 3500,
             "Temporary Mute 5m": 2500,
+        }
+
+        # Channel meta
+        self.rewards = {
+            1:  851225537165918259,  # r@Interested
+            3:  851236641531363338,  # r@Media Perms
+            5:  851225705148841985,  # r@Neko Admirer
+            10: 851225900607602700,  # r@Neko Lover
+            15: 851225951161417738,  # r@Neko Addict
+            20: 740677748204240980,  # r@Neko Headpatter
+            22: 740677678159364147,  # r@Neko Enthusiast
+            24: 740679288533024911,  # r@Neko Body Rubber
+            26: 740679721385328750,  # r@Neko Pleasurer
+            28: 740677950315429969,  # r@Neko Caretaker
+            30: 740678012097265704,  # r@Neko Owner
+            32: 755608514755428442,  # r@Neko Babysitter
+            34: 830525152553992244,  # r@Neko Connoisseur
+        }
+            
+        self.ignored_channels = [
+            740923481939509258,  # c#Staff Room
+            740676328935653406,  # c#Bulletin
+            761793288910143498,  # t#⚠️nsfw-bots
+            780654704362389535,  # c#Upstairs
+            852405741402062880,  # c#NReader
+        ]
+
+        self.ignored_roles = [
+            789960054970515487,  # r@⛔Leveling Paused
+            741431440490627234   # r@Muted
+        ]
+
+        self.no_cd_channels = [
+            740663474568560671,  # c#SFW Catgirls
+            740663386500628570   # c#NSFW Catgirls
+        ]
+
+        self.modifiers = {
+            "textc": {
+                741381152543211550: 1.05,  # t#🐾general-1
+                769386184895234078: 0.75,  # t#🐾high-tier-hideout
+            },
+            "categoryc": {
+                816671250025021450: 0.05,  # c#Robotics Club
+                740663474568560671: 0.20,  # c#SFW Catgirls
+                740663386500628570: 0.20,  # c#NSFW Catgirls
+            },
+            "role": {  # Role does not stack
+                748505664472612994: 1.05,  # r@⭐Neko Bookster!⭐
+            }
         }
 
     def exp_gain(self) -> float:
@@ -375,7 +423,7 @@ Turn the levelup message into a set of reactions.
 
         await ctx.send(embed=Embed(
             title="Neko Heaven Leaderboard",
-            description=f"Here are the top 15 ranked users for this server:\n"
+            description=f"Here are the top 10 ranked users for this server:\n"
                         f"----------\n"
         ).add_field(
             name="**1-5**",
@@ -390,7 +438,7 @@ Turn the levelup message into a set of reactions.
     @command(aliases=["setlevel", "setrank", "sl", "sr"])
     @has_permissions(administrator=True)
     @bot_has_permissions(send_messages=True, embed_links=True)
-    async def set_cumulative_exp(self, ctx, member, level=None):
+    async def set_level(self, ctx, member, level=None):
         try:
             member = member.strip("<@!>")
             member = int(member)
@@ -440,6 +488,46 @@ Turn the levelup message into a set of reactions.
             title="Set Level",
             description=f"✅ Set {member.mention}'s level to {level}."))
 
+    @command(name="setcumulative", aliases=["setexp"])
+    @has_permissions(administrator=True)
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def set_cumulative_exp(self, ctx, member, amount=None):
+        try:
+            member = member.strip("<@!>")
+            member = int(member)
+            amount = int(amount)
+        except ValueError:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description="**Invalid argument(s).**\n"
+                            "`member`  and `amount` must be numbers.\n"
+                            "`member` should be a UID that belongs to a member in this server."))
+
+            return
+
+        member = ctx.guild.get_member(member)
+        if not member:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"No member with UID {member} found."))
+            return
+        
+        if member.bot:
+            await ctx.send(embed=Embed(
+                color=0xff0000,
+                description=f"Bots don't count."))
+            return
+
+        if str(member.id) not in self.bot.user_data["UserData"]:
+            self.bot.user_data["UserData"][str(member.id)] = \
+                self.bot.defaults["UserData"]["UID"]
+
+        self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"] = amount
+
+        await ctx.send(embed=Embed(
+            title="Set Spending",
+            description=f"✅ Set {member.mention}'s Cumulative EXP to {amount}."))
+
     @command(name="setspending", aliases=["setmoney"])
     @has_permissions(administrator=True)
     @bot_has_permissions(send_messages=True, embed_links=True)
@@ -486,7 +574,8 @@ Turn the levelup message into a set of reactions.
         self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"] = \
             not self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"]
 
-        await ctx.send(f'Toggled Low Profile Levelup indicator for you. It should now be set to {self.bot.user_data["UserData"][str(ctx.author.id)]["Settings"]["lp_levelup"]}.')
+        await ctx.send(embed=Embed(
+            description=f"✅ Low Profile Levelup is now `{'On' if self.bot.user_data['UserData'][str(ctx.author.id)]['Settings']['lp_levelup'] else 'Off'}`."))
 
     @Cog.listener()
     async def on_message(self, msg):
@@ -511,58 +600,15 @@ Turn the levelup message into a set of reactions.
             return
 
         if msg.guild and msg.guild.id == 740662779106689055:
-            rewards = {
-                1:  851225537165918259,  # r@Interested
-                3:  851236641531363338,  # r@Media Perms
-                5:  851225705148841985,  # r@Neko Admirer
-                10: 851225900607602700,  # r@Neko Lover
-                15: 851225951161417738,  # r@Neko Addict
-                20: 740677748204240980,  # r@Neko Headpatter
-                22: 740677678159364147,  # r@Neko Enthusiast
-                24: 740679288533024911,  # r@Neko Body Rubber
-                26: 740679721385328750,  # r@Neko Pleasurer
-                28: 740677950315429969,  # r@Neko Caretaker
-                30: 740678012097265704,  # r@Neko Owner
-                32: 755608514755428442,  # r@Neko Babysitter
-                34: 830525152553992244,  # r@Neko Connoisseur
-            }
-            
-            ignored_channels = [
-                740923481939509258,  # c#Staff Room
-                740676328935653406,  # c#Bulletin
-                761793288910143498,  # t#⚠️nsfw-bots
-                780654704362389535,  # c#Upstairs
-                852405741402062880,  # c#NReader
-            ]
-
-            ignored_roles = [
-                789960054970515487,  # r@⛔Leveling Paused
-                741431440490627234   # r@Muted
-            ]
-
-            ignore_cooldown = [
-                740663474568560671,  # c#SFW Catgirls
-                740663386500628570   # c#NSFW Catgirls
-            ]
-
-            modifiers = {
-                "textc": {
-                    741381152543211550: 1.05,  # t#🐾general-1
-                    769386184895234078: 0.75,  # t#🐾high-tier-hideout
-                },
-                "categoryc": {
-                    816671250025021450: 0.05,  # c#Robotics Club
-                    740663474568560671: 0.20,  # c#SFW Catgirls
-                    740663386500628570: 0.20,  # c#NSFW Catgirls
-                },
-                "role": {  # Role does not stack
-                    748505664472612994: 1.05,  # r@⭐Neko Bookster!⭐
-                }
-            }
+            rewards = self.rewards
+            ignored_channels = self.ignored_channels
+            ignored_roles = self.ignored_roles
+            no_cd_channels = self.no_cd_channels
+            modifiers = self.modifiers
 
             def calculate_earnings():
-                if not ((msg.channel.id in ignore_cooldown) or \
-                    (msg.channel.category and msg.channel.category.id in ignore_cooldown)):
+                if not ((msg.channel.id in no_cd_channels) or \
+                    (msg.channel.category and msg.channel.category.id in no_cd_channels)):
                     if msg.author.id in self.exp_cooldown: return 0
                     else: self.exp_cooldown[msg.author.id] = "placeholder"
 
@@ -673,7 +719,8 @@ Turn the levelup message into a set of reactions.
                     "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
                 ]
 
-                if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"]:
+                if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"] or \
+                    msg.channel.category.id in [740663474568560671, 740663386500628570, 871483997786607636]:  # Media categories
                     num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
                     with suppress(NotFound):
                         await msg.add_reaction(self.bot.get_emoji(870143948750979072))
@@ -681,18 +728,20 @@ Turn the levelup message into a set of reactions.
                         for number in str(new_level):
                             await msg.add_reaction(num_to_emoji[int(number)])
 
-                        await sleep(5)
+                        await sleep(3)
                         await msg.clear_reactions()
 
                     return
 
-                try: reward = rewards[new_level]
-                except KeyError: reward = None
-                if reward:
-                    role = msg.guild.get_role(reward)
-                    if role: await msg.author.add_roles(role)
-
                 else:
+                    if new_level in rewards:
+                        reward = msg.guild.get_role(rewards[new_level])
+                        if not reward: 
+                            try: reward = await msg.guild.fetch_role(rewards[new_level])
+                            except NotFound: reward = None
+                    else:
+                        reward = None
+
                     if not self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"]:
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
                             description=f"You've leveled up! Thanks for spending your time with us.\n"
@@ -716,6 +765,7 @@ Turn the levelup message into a set of reactions.
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
                             ).set_image(url=choice(level_up_gifs)))
+
 
     @leaderboard.before_invoke
     async def placeholder_remove(self, ctx):
