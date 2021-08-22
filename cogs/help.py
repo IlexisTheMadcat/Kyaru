@@ -54,6 +54,9 @@ Return a seperate help message for leveling commands and information.
 __`avatar [user]`__
 Return this user's avatar. Leave blank to return your own.
 
+__`nick [name]`__
+Submit a nickname request. Leave blank to reset.
+
 __`toggle_auto_embed/auto_emb`__
 Toggle auto-embedding your message.
 ー If your message contains message links, you will be given the option to simplify it.
@@ -67,8 +70,6 @@ __`waifu2x/upscale`__
 
 __`detect_nsfw/nsfw`__
 Detects the NSFW rating of the image you link or upload.
-ー Kyaru runs this command internally for all users who join Neko Heaven to scan their profile picture for NSFW content.
-ー NSFW is usually a score between 0-100%, with 60%> being considered as such.
 ー Results are done by a computer and may not be accurate.
 
 __`welcome <user> [image_number (1-5)]`__
