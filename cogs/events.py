@@ -882,7 +882,7 @@ class Events(Cog):
                 await pos.edit(nick=pre.nick)
                 self.bot.pause_member_update.remove(pos.id)
 
-                with surpress(Forbidden):
+                with suppress(Forbidden):
                     await pos.send(embed=Embed(
                         color=0xFFBF00,
                         title="Warning",
