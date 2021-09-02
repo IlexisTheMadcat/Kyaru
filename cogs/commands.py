@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+from sys import exc_info
 from requests import post
 from random import randint, choice
 from urllib.request import urlretrieve as udownload
@@ -98,7 +99,7 @@ class Commands(Cog):
             img = Image.open(result[0]).convert("RGBA")
             img.save(f"Workspace/image_{ctx.message.id}.png")
 
-            channel = self.bot.get_channel(766506735107047426)
+            channel = self.bot.get_channel(789198608175202394)
             host_msg = await channel.send(file=File(f"Workspace/image_{ctx.message.id}.png"))
             os.remove(f"Workspace/image_{ctx.message.id}.png")
 
@@ -107,10 +108,10 @@ class Commands(Cog):
                 ).set_footer(text="This image was redrawn by a computer.\nResults may vary from image to image."))
             return
     
-    @command(aliases=["nsfw"])
+    @command(aliases=["r_nsfw"])
     @has_permissions(attach_files=True, embed_links=True)
     @bot_has_permissions(send_messages=True, embed_links=True)
-    async def detect_nsfw(self, ctx, url=None):
+    async def rate_nsfw(self, ctx, url=None):
         if ctx.message.attachments:
             if len(ctx.message.attachments) > 1:
                 await ctx.send("Please only attach one image at a time.")
@@ -153,7 +154,7 @@ class Commands(Cog):
                 ).set_footer(text="ERR."))
             return
 
-    @command(aliases=["scan", "sn"])
+    @command(aliases=["s_nsfw"])
     @has_permissions(attach_files=True)
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def scan_nsfw(self, ctx, url=None):
@@ -162,10 +163,11 @@ class Commands(Cog):
                 await ctx.send("Please only attach one image at a time.")
                 return
             
-            conf = await ctx.channel.send("<a:loading:813237675553062954> Please wait, waiting for NudeNet to respond...")
+            conf = await ctx.channel.send(embed=Embed(description=f"{self.bot.get_emoji(813237675553062954)} Please wait, waiting for NudeNet to respond..."))
             attach_data = await ctx.message.attachments[0].read()
 
             img = Image.open(BytesIO(attach_data)).convert("RGBA")
+            img_original = img.copy()
             
             width, height = img.size
             if (width > height and width > 800) or (height > width and height > 800):  
@@ -196,9 +198,6 @@ class Commands(Cog):
             #rj = __import__("json").dumps(detections, indent=4)
             #await conf.edit(content=f"```json\n{rj}```")
             
-            drawing_pad = Image.new("RGBA", img.size, (0,0,0,0))
-            draw = ImageDraw.Draw(drawing_pad, "RGBA")
-            
             names = []
             search_for = {
                 "COVERED_BREAST_F": "Covered Female Breast",
@@ -209,6 +208,9 @@ class Commands(Cog):
                 "EXPOSED_ANUS": "Exposed Anus",
                 "EXPOSED_BUTTOCKS": "Exposed Buttocks"
             }
+            
+            await conf.edit(embed=Embed(description=f"{self.bot.get_emoji(813237675553062954)} Rendering results..."))
+
             for ind, finding in enumerate(detections):
                 if not finding["label"] in search_for:
                     continue 
@@ -222,11 +224,15 @@ class Commands(Cog):
                     return (round(r),round(g),round(b))
 
                 color = lin_interp((0,255,0), (255,0,0), finding['score'])
-                
+
+                drawing_pad = Image.new("RGBA", img.size, (0,0,0,0))
+                draw = ImageDraw.Draw(drawing_pad, "RGBA")
+
                 draw.rectangle(finding['box'], fill=(color)+(50,))
                 draw.rectangle(finding['box'], outline=(color)+(255,), width=3)
+                
+                img.paste(drawing_pad, (0,0), mask=drawing_pad)
 
-            img.paste(drawing_pad, (0,0), mask=drawing_pad)
             img.save(f"Workspace/image_{ctx.message.id}.png", format="png")
             image_server = self.bot.get_channel(789198608175202394)
             image_container = await image_server.send(file=File(f"Workspace/image_{ctx.message.id}.png"))
@@ -244,6 +250,10 @@ class Commands(Cog):
                 color=0xff0000,
                 description=f"NudeNet responded with an error:\n> {type(e).__name__}: {e}"
                 ).set_footer(text="ERR."))
+
+            error = exc_info()
+            await self.bot.errorlog.send(error, event=f"Command: {ctx.command.name}")
+            
             return
 
     @command()
