@@ -452,7 +452,7 @@ class Events(Cog):
                                         emb.set_image(url=url)
                                         break
                     
-                    new_content = new_content.replace(link, "[]")
+                    new_content = new_content.replace(link, "[NHK]")
 
                     # Special use case
                     if message.author.id == self.bot.user.id and \
@@ -473,7 +473,7 @@ class Events(Cog):
 
                 if messages:
                     await msg.delete()
-                    new_content = new_content.strip("[]")
+                    new_content = new_content.strip("[NHK]")
                     emb.description = f"{new_content}\n" \
                                       f"{newline.join(link_jumps)}"
 
