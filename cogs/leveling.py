@@ -719,6 +719,17 @@ Turn the levelup message into a set of reactions.
                     "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
                 ]
 
+                if new_level in rewards:
+                    reward = msg.guild.get_role(rewards[new_level])
+                    if not reward: 
+                        try: reward = await msg.guild.fetch_role(rewards[new_level])
+                        except NotFound: reward = None
+                else:
+                    reward = None
+
+                if reward:
+                    await msg.author.add_roles(reward)
+
                 if self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["lp_levelup"] or \
                     msg.channel.category.id in [740663474568560671, 740663386500628570, 871483997786607636]:  # Media categories
                     num_to_emoji = {1:"1️⃣", 2:"2️⃣", 3:"3️⃣", 4:"4️⃣", 5:"5️⃣", 6:"6️⃣", 7:"7️⃣", 8:"8️⃣", 9:"9️⃣", 0:"0️⃣"}
@@ -734,19 +745,11 @@ Turn the levelup message into a set of reactions.
                     return
 
                 else:
-                    if new_level in rewards:
-                        reward = msg.guild.get_role(rewards[new_level])
-                        if not reward: 
-                            try: reward = await msg.guild.fetch_role(rewards[new_level])
-                            except NotFound: reward = None
-                    else:
-                        reward = None
-
                     if not self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"]:
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
                             description=f"You've leveled up! Thanks for spending your time with us.\n"
                                         f"You are now level {new_level}! Have a headpat.\n"
-                                        f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
+                                        f"{'You earned the '+reward.mention+' role!'+newline if reward else ''}"
                                         f"\n"
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
@@ -759,7 +762,7 @@ Turn the levelup message into a set of reactions.
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
                             description=f"You've leveled up! Thanks for spending your time with us.\n"
                                         f"You are now level {new_level}! Have a headpat.\n"
-                                        f"{'You earned the '+role.mention+' role!'+newline if reward else ''}"
+                                        f"{'You earned the '+reward.mention+' role!'+newline if reward else ''}"
                                         f"\n"
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
