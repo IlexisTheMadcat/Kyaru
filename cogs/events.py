@@ -39,7 +39,8 @@ class Events(Cog):
         self.bot.pause_member_update = []
         self.just_joined = ExpiringDict(
             max_len=float('inf'), 
-            max_age_seconds=600)
+            max_age_seconds=600),
+        self.pause_member_update = []
 
     # Message events
     # --------------------------------------------------------------------------------------------------------------------------
@@ -788,7 +789,7 @@ class Events(Cog):
                                 ).set_image(url=str(user.avatar_url)
                                 ).set_footer(text="This test was done by a computer and may not be accurate."))
 
-                        self.just_joined.append(member.id)
+                        self.just_joined.update({str(member.id):welcome_msg})
                         await guild.ban(member)
                         await guild.unban(member)
                         return
@@ -866,7 +867,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_member_update(self, pre, pos):
-        if pos.id in self.bot.pause_member_update:
+        if pos.id in self.pause_member_update:
             return
         
         # Detect nickname change
@@ -878,9 +879,9 @@ class Events(Cog):
             general = await self.bot.fetch_channel(741381152543211550)
             if pos.nick != pre.nick and not pos.permissions_in(general).manage_nicknames and not pos.bot:
                 
-                self.bot.pause_member_update.append(pos.id)
+                self.pause_member_update.append(pos.id)
                 await pos.edit(nick=pre.nick)
-                self.bot.pause_member_update.remove(pos.id)
+                self.pause_member_update.remove(pos.id)
 
                 with suppress(Forbidden):
                     await pos.send(embed=Embed(
@@ -940,7 +941,7 @@ class Events(Cog):
                                     "\n"
                                     "❌No mod was available to declare the safety of your profile picture. I cannot accept the risk of letting you stay for now.\n"
                                     "\n"
-                                    "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                    "Due to this, you've been automatically banned from Neko Heaven following server rules. If you believe this was in error, "
                                     "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
                                     "\n"
                                     "The below image is what was scanned for infringement."
@@ -981,16 +982,15 @@ class Events(Cog):
                                         f"\n"
                                         f"{reason}\n"
                                         f"\n"
-                                        "Due to this, you've been soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                        "Due to this, you've been banned from Neko Heaven following server rules. If you believe this was in error, "
                                         f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
                                         f"\n"
                                         f"The below image is what was scanned for infringement."
                             ).set_image(url=str(user.avatar_url)
                             ).set_footer(text="This test was done by a computer and may not be accurate."))
 
-                        self.just_joined.append(member.id)
+                        self.just_joined.update({str(member.id):welcome_msg})
                         await guild.ban(member)
-                        await guild.unban(member)
                         return
 
     # Catgirl Heaven server icon changes
