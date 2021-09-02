@@ -68,8 +68,12 @@ __`waifu2x/upscale`__
 ー You may attach a file or append an IMAGE URL to the end of your message.
 ー Results are redrawn by a computer, results may vary from image to image.
 
-__`detect_nsfw/nsfw`__
+__`rate_nsfw/r_nsfw`__
 Detects the NSFW rating of the image you link or upload.
+ー Results are done by a computer and may not be accurate.
+
+__`scan_nsfw/s_nsfw`__
+Detects NSFW elements of the image you link or upload.
 ー Results are done by a computer and may not be accurate.
 
 __`welcome <user> [image_number (1-5)]`__
