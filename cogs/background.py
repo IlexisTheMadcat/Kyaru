@@ -35,7 +35,9 @@ class BackgroundTasks(Cog):
                 name=f"{self.bot.command_prefix} | UTC: {time}")
 
         await self.bot.change_presence(status=status, activity=activity)
-
+    
+    ひらがな = True
+    
     @loop(seconds=57.5)
     async def save_data(self):
         # If the repl is exited while saving, data may be corrupted or reset.
