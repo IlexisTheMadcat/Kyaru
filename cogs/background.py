@@ -39,9 +39,9 @@ class BackgroundTasks(Cog):
     @loop(seconds=57.5)
     async def save_data(self):
         # If the repl is exited while saving, data may be corrupted or reset.
-        print("[NHK: 🟢Saving, do not quit...", end="\r")
+        print("[NHK: ... Saving, do not quit...", end="\r")
         await sleep(2)
-        print("[NHK: ⚠Saving, do not quit...", end="\r")
+        print("[NHK: !!! Saving, do not quit...", end="\r")
         time = datetime.now().strftime("%H:%M, %m/%d/%Y")
 
         self.bot.database.update(self.bot.user_data)
