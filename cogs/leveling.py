@@ -37,6 +37,7 @@ class Leveling(Cog):
             "Cumulative EXP Booster +1.0x 20m": 2000,
             "Cumulative EXP Booster +2.0x 30m": 3500,
             "Temporary Mute 5m": 2500,
+            "Skip A Level": 7500
         }
 
         # Channel meta
@@ -58,6 +59,19 @@ class Leveling(Cog):
             38: 883774336866070598,  # r@Neko Apprentice 
             40: 883775395667800097,  # r@Neko Healer
         }
+
+        self.level_up_gifs = [
+            "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
+            "https://i.pinimg.com/originals/2e/27/d5/2e27d5d124bc2a62ddeb5dc9e7a73dd8.gif",
+            "https://cdn.discordapp.com/attachments/722603546024869978/869650507344519270/ezgif-1-4fbad88c84891.gif",
+            "https://gifimage.net/wp-content/uploads/2017/09/anime-head-pat-gif.gif",
+            "https://media.giphy.com/media/ye7OTQgwmVuVy/giphy.gif",
+            "https://media1.tenor.com/images/0ea33070f2294ad89032c69d77230a27/tenor.gif?itemid=16053520",
+            "https://media1.tenor.com/images/ecb87fb2827a022884d5165046f6608a/tenor.gif?itemid=16042548",
+            "https://media1.tenor.com/images/63924d378cf9dbd6f78c2927dde89107/tenor.gif?itemid=15049549",
+            "https://media1.tenor.com/images/57e98242606d651cc992b9525d3de2d8/tenor.gif?itemid=17549072",
+            "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
+        ]
             
         self.ignored_channels = [
             740923481939509258,  # c#Staff Room
@@ -309,9 +323,91 @@ Turn the levelup message into a set of reactions.
                 await member.remove_roles(muted)
                 await m.channel.send(content=ctx.author.mention, embed=Embed(description="Canceled `Temporary Mute 5m`."))
                 await member.send("Your mute has ended early.")
+           
+        elif item_name == "Skip A Level":
+            # Working copy of current cumulative exp
+            cumulative_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Cumulative EXP"])
+            # Iterate through current cumulative EXP for current level
+            current_level = 0
+            while True:
+                cumulative_exp_copy -= (self.a*(current_level+1)) + self.b
+                
+                if cumulative_exp_copy < 0: 
+                    cumulative_exp_copy += (self.a*(current_level+1)) + self.b
+                    break
+                else:
+                    current_level += 1
+                
+                continue
+
+            cumulative_exp = 0
+            working_level = deepcopy(current_level+1)
+            while True:
+                working_level -= 1
+
+                if working_level < 0: 
+                    working_level += 1
+                    break
+                else:
+                    cumulative_exp += (self.a*(working_level+1)) + self.b
+                
+                continue
+
+            self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Cumulative EXP"] = cumulative_exp
+
+            # Working copy of new cumulative exp
+            cumulative_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Cumulative EXP"])
+            # Iterate through new cumulative EXP for new level
+            new_level = 0
+            while True:
+                cumulative_exp_copy -= (self.a*(new_level+1)) + self.b
+                
+                if cumulative_exp_copy < 0: 
+                    cumulative_exp_copy += (self.a*(new_level+1)) + self.b
+                    break
+                else:
+                    new_level += 1
+                
+                continue
             
+            if new_level in self.rewards:
+                reward = ctx.guild.get_role(self.rewards[new_level])
+                if not reward: 
+                    try: reward = await ctx.guild.fetch_role(self.rewards[new_level])
+                    except NotFound: reward = None
+            else:
+                reward = None
+
+            if reward:
+                await ctx.author.add_roles(reward)
+
+            total_exp_to_next = (self.a*(new_level+1))+self.b
+            remaining_exp_to_next = ((self.a*(new_level+1))+self.b) - cumulative_exp_copy
+            obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
+            full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Cumulative EXP"])
+            full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"])
+
+            if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
+            else: remaining_exp_to_next = round(remaining_exp_to_next, 1)
+            if obtained_exp_to_next%1 == 0: obtained_exp_to_next = int(obtained_exp_to_next)
+            else: obtained_exp_to_next = round(obtained_exp_to_next, 1)
+            if full_cumulative_exp%1 == 0: full_cumulative_exp = int(full_cumulative_exp)
+            else: full_cumulative_exp = round(full_cumulative_exp, 1)
+            if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
+            else: full_spending_exp = round(full_spending_exp, 1)
+
+            await ctx.send(content=ctx.author.mention, embed=Embed(
+                description=f"You've leveled up! Thanks for spending your time with us.\n"
+                            f"You are now level {current_level+1}! Have a headpat.\n"
+                            f"{'You earned the '+reward.mention+' role!'+newline if reward else ''}"
+                            f"\n"
+                            f"Current Spending EXP: 💳 {full_spending_exp}\n"
+                            f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
+                ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                ).set_image(url=choice(self.level_up_gifs)))
+
         else:
-            await ctx.send(content=ctx.author.mention, embed=Embed(description="That item doesn't have a use yet."))
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="That item doesn't have a use yet."))
             return
 
         self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
@@ -708,19 +804,6 @@ Turn the levelup message into a set of reactions.
                 else: full_cumulative_exp = round(full_cumulative_exp, 1)
                 if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
                 else: full_spending_exp = round(full_spending_exp, 1)
-                
-                level_up_gifs = [
-                    "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
-                    "https://i.pinimg.com/originals/2e/27/d5/2e27d5d124bc2a62ddeb5dc9e7a73dd8.gif",
-                    "https://cdn.discordapp.com/attachments/722603546024869978/869650507344519270/ezgif-1-4fbad88c84891.gif",
-                    "https://gifimage.net/wp-content/uploads/2017/09/anime-head-pat-gif.gif",
-                    "https://media.giphy.com/media/ye7OTQgwmVuVy/giphy.gif",
-                    "https://media1.tenor.com/images/0ea33070f2294ad89032c69d77230a27/tenor.gif?itemid=16053520",
-                    "https://media1.tenor.com/images/ecb87fb2827a022884d5165046f6608a/tenor.gif?itemid=16042548",
-                    "https://media1.tenor.com/images/63924d378cf9dbd6f78c2927dde89107/tenor.gif?itemid=15049549",
-                    "https://media1.tenor.com/images/57e98242606d651cc992b9525d3de2d8/tenor.gif?itemid=17549072",
-                    "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
-                ]
 
                 if new_level in rewards:
                     reward = msg.guild.get_role(rewards[new_level])
@@ -758,7 +841,7 @@ Turn the levelup message into a set of reactions.
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                                         f"*Tip: You can hide this message in the future by going to <#740671751293501592> and typing `k!lp_levelup`.*"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
-                            ).set_image(url=choice(level_up_gifs)))
+                            ).set_image(url=choice(self.level_up_gifs)))
 
                         self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"] = True
                     else:
@@ -770,7 +853,7 @@ Turn the levelup message into a set of reactions.
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
-                            ).set_image(url=choice(level_up_gifs)))
+                            ).set_image(url=choice(self.level_up_gifs)))
 
 
     @leaderboard.before_invoke
