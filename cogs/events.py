@@ -141,7 +141,7 @@ class Events(Cog):
                             description=f"Sorry for the inconvenience, please upload your image in this channel:\n"
                                         f"{buffer_target.mention}; It is too large for me to send!\n"
                                         f"\n"
-                                        f"To cancel, send `-cancel` in the buffer channel.\n"
+                                        f"To cancel, send `k-cancel` in the buffer channel.\n"
                                         f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
 
                     while True:
@@ -157,7 +157,7 @@ class Events(Cog):
                             return
 
                         else:
-                            if m.content == "-cancel":
+                            if m.content == "k-cancel":
                                 await buffer_target.send("Alright.", delete_after=2)
                                 await sleep(2)
                                 await buffer_target.edit(overwrites=buffer_target.category.overwrites)
