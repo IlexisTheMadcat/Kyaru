@@ -54,6 +54,9 @@ class Leveling(Cog):
             30: 740678012097265704,  # r@Neko Owner
             32: 755608514755428442,  # r@Neko Babysitter
             34: 830525152553992244,  # r@Neko Connoisseur
+            36: 883775368761323530,  # r@Neko Maid
+            38: 883774336866070598,  # r@Neko Apprentice 
+            40: 883775395667800097,  # r@Neko Healer
         }
             
         self.ignored_channels = [
