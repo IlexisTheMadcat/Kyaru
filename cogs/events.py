@@ -27,6 +27,7 @@ from discord.ext.commands.errors import (
     NotOwner, BadArgument,
     CheckFailure
 )
+from discord.ext.tasks import loop
 
 from utils.classes import Embed
 
@@ -789,9 +790,7 @@ class Events(Cog):
                                 ).set_image(url=str(user.avatar_url)
                                 ).set_footer(text="This test was done by a computer and may not be accurate."))
 
-                        self.just_joined.update({str(member.id):welcome_msg})
                         await guild.ban(member)
-                        await guild.unban(member)
                         return
 
             img = Image.open(BytesIO(await member.avatar_url_as(format='png').read())).convert("RGBA")
@@ -824,7 +823,7 @@ class Events(Cog):
                 ).set_image(url=image_url
                 ).set_footer(text=f"UID: {member.id}"))
 
-            self.just_joined.update({str(member.id):welcome_msg})
+            self.just_joined[0].update({str(member.id):welcome_msg})
 
             if str(member.id) not in self.bot.user_data["UserData"]:
                 self.bot.user_data["UserData"][str(member.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
@@ -838,7 +837,7 @@ class Events(Cog):
                 ).set_image(url=member.avatar_url
                 ).set_footer(text=f"UID: {member.id}"))
 
-            self.just_joined.update({str(member.id):welcome_msg})
+            self.just_joined[0].update({str(member.id):welcome_msg})
 
     @Cog.listener()
     async def on_member_remove(self, member):
@@ -848,8 +847,8 @@ class Events(Cog):
 
             general = self.bot.get_channel(741381152543211550)
 
-            if str(member.id) in self.just_joined:
-                welcome_msg = self.just_joined[str(member.id)]
+            if str(member.id) in self.just_joined[0]:
+                welcome_msg = self.just_joined[0][str(member.id)]
                 general_history = await general.history(limit=5).flatten()
 
                 if welcome_msg.id == general_history[0].id:
@@ -857,7 +856,7 @@ class Events(Cog):
                 else:
                     await general.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
                 
-                self.just_joined.pop(str(member.id))
+                self.just_joined[0].pop(str(member.id))
 
             elif not member.bot:
                 await general.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
@@ -947,6 +946,9 @@ class Events(Cog):
                                     "The below image is what was scanned for infringement."
                         ).set_image(url=str(user.avatar_url)
                         ).set_footer(text="This test was done by a computer and may not be accurate."))
+
+                    await guild.ban(member)
+                    return
         
                 else:
                     if str(r.emoji) == "✅":
@@ -989,7 +991,6 @@ class Events(Cog):
                             ).set_image(url=str(user.avatar_url)
                             ).set_footer(text="This test was done by a computer and may not be accurate."))
 
-                        self.just_joined.update({str(member.id):welcome_msg})
                         await guild.ban(member)
                         return
 
