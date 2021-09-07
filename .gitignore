@@ -2,4 +2,5 @@
 .vs
 Storage
 Workspace
+*RulesBackup.txt*
 *ServiceAccountKey.json*
