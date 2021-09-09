@@ -708,7 +708,7 @@ class Events(Cog):
                 data={'image': str(user.avatar_url)},
                 headers={'api-key': self.bot.auth["DeepAI_key"]})
             
-            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.5:
+            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.7:
                 muted_role = utils.get(member.guild.roles, id=741431440490627234)
                 await member.add_roles(muted_role)
         
@@ -908,7 +908,7 @@ class Events(Cog):
                 data={'image': str(user.avatar_url)},
                 headers={'api-key': self.bot.auth["DeepAI_key"]})
             
-            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.5:
+            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.7:
                 muted_role = utils.get(member.guild.roles, id=741431440490627234)
                 await member.add_roles(muted_role)
         
