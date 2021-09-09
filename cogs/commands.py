@@ -307,7 +307,7 @@ class Commands(Cog):
             await ctx.send("You're kidding, right?")
             return
 
-        if len(new_name) > 32:
+        if new_name and len(new_name) > 32:
             await ctx.send(
                 f"That name is too big. It must be under 32 characters.\n"
                 f"`{new_name[0:32]}`~~`{new_name[32:len(new_name)]}`~~")
