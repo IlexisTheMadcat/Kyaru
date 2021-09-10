@@ -43,6 +43,281 @@ class Events(Cog):
             max_age_seconds=600),
         self.pause_member_update = []
 
+        # List of Message to act on. Added to by on_message event after conditions are met.
+        self.upscale_image_tasks = []  
+        self.upscale_image_task.start()
+
+    @loop(seconds=1)
+    async def upscale_image_task(self):
+        if not self.upscale_image_tasks: return
+
+        msg = self.upscale_image_tasks[0]
+
+        try:
+            await msg.channel.fetch_message(msg.id)
+        except NotFound:
+            # Ended task early, clean up
+            self.upscale_image_tasks.pop(0)
+            return
+
+        # Start task process
+        await msg.clear_reactions()
+        await msg.channel.set_permissions(msg.author, send_messages=False)
+                
+        # Check image size due to Discord upload limitations.
+        # Upscale will not be used in this case as the file will most likely be larger.
+        async def file_too_large_prompt():
+            with suppress(NotFound):
+                await msg.delete()
+
+            buffer_target = self.bot.get_channel(789190968267636768)
+            await buffer_target.set_permissions(msg.author, read_messages=True)
+
+            conf = await msg.channel.send(msg.author.mention, 
+                embed=Embed(
+                    color=0xff0000,
+                    description=f"Sorry for the inconvenience, please upload your image in this channel:\n"
+                                f"{buffer_target.mention}; It is too large for me to send!\n"
+                                f"\n"
+                                f"To cancel, send `k-cancel` in the buffer channel.\n"
+                                f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
+
+            while True:
+                try:
+                    m = await self.bot.wait_for("message", timeout=120, check=lambda m: m.author.id == msg.author.id and m.channel.id == 789190968267636768)
+                except TimeoutError:
+                    await conf.delete()
+                    await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                        
+                    if msg.channel.id != 777189629505699850:
+                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                        
+                    return
+
+                else:
+                    if m.content == "k-cancel":
+                        await buffer_target.send("Alright.", delete_after=2)
+                        await sleep(2)
+                        await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                        if msg.channel.id != 777189629505699850:
+                            await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                        await conf.delete()
+
+                        return
+
+                    if not m.attachments:
+                        await buffer_target.send("Attach a file! Please try again.", delete_after=5)
+                        continue
+                        
+                    await buffer_target.send("Thanks!", delete_after=2)
+                    await sleep(2)
+                    await buffer_target.edit(overwrites=buffer_target.category.overwrites)
+                                
+                    await conf.edit(content="", 
+                        embed=Embed(
+                            color=0x32d17f, 
+                            description=f"Uploaded by {msg.author.mention}"
+                                        f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
+                        ).set_image(url=m.attachments[0].url
+                        ).set_footer(text=f"UID: {msg.author.id}"))
+
+                    await conf.add_reaction("⬆")
+
+                    if msg.channel.id != 777189629505699850:
+                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+                    return
+                
+        attach = msg.attachments[0]
+        if attach.size >= 8000000:
+            await file_too_large_prompt()
+            
+            # Ended task early, clean up
+            self.upscale_image_tasks.pop(0)
+            return
+
+        conf = await msg.channel.send(
+            embed=Embed(
+                title="Upscaling For Quality",
+                description=f"{self.bot.get_emoji(813237675553062954)} {msg.author.mention} Please wait..."))
+
+        # Copy attachment
+        dcfileobj = await attach.to_file()
+
+        # Read attachment
+        attach_data = await attach.read()
+                
+        # Check if it's a GIF
+        img = Image.open(BytesIO(attach_data))
+        try:
+            img.seek(1)
+        except EOFError:
+            is_animated = False
+        else:
+            img.seek(0)
+            is_animated = True
+                
+        if is_animated:  # Skip upscaling and use original attachment
+            attachment_file = dcfileobj
+            has_upscaled = False
+                
+        else:  # Continue with checks
+                    
+            width, height = img.size  # Store original size
+                    
+            # If smaller dimension is less than 300px, deny upload. 
+            # Image will look distorted.
+            if ((width > height and height < 300) or \
+                (height >= width and width < 300)):
+                await msg.delete()
+                await conf.edit(
+                    embed=Embed(
+                        color=0xff0000,
+                        description=f"❌ That image is too small! Please use [Google Images](https://images.google.com/) or [SauceNAO](https://saucenao.com) to check for a larger resolution."
+                    ), delete_after=5)
+
+                # Ended task early, clean up
+                self.upscale_image_tasks.pop(0)
+                return
+                    
+            # If smaller dimension is greater than 1000px, skip upscaling
+            if ((width > height and height > 1000) or \
+                (height >= width and width > 1000)):
+                        
+                attachment_file = dcfileobj
+                has_upscaled = False
+
+            else:  # Start upscale process
+                        
+                # Store previous dimensions after upscaling to keep track
+                last_width, last_height = deepcopy(width), deepcopy(height)
+                has_upscaled = True
+
+                current_data = attach_data
+                retries = 3
+                # Loop until image is optimal size or exceeded tries
+                while retries >= 0:
+
+                    # Upload image
+                    async with aiohttp.ClientSession() as cs:
+                        data = aiohttp.FormData()
+                        data.add_field(
+                            'image', current_data,
+                            filename=f'image_{msg.id}.jpg',
+                            content_type='multipart/form-data')
+
+                        r = await cs.post(
+                            "https://api.deepai.org/api/waifu2x",
+                            data=data, headers={'api-key': self.bot.auth["DeepAI_key"]}
+                        )
+
+                        r.json = await r.json()
+
+                    """
+                    # Upload image
+                    r = post(
+                        "https://api.deepai.org/api/waifu2x",
+                        files={'image': current_data},
+                        headers={'api-key': self.bot.auth["DeepAI_key"]}
+                    )
+
+                    r.json = r.json()
+                    """
+                            
+                    try:
+                        result = udownload(r.json["output_url"])
+                    except KeyError:
+                        with suppress(NotFound):
+                            await msg.delete()
+
+                        await conf.edit(
+                            embed=Embed(
+                                color=0xff0000,
+                                description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                            f"`{r.json['err']}`"
+                            ), delete_after=5)
+
+                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                        
+                        # Ended task early, clean up
+                        self.upscale_image_tasks.pop(0)
+                        return
+                            
+                    else:
+                        # Open returned image and check results
+                        img = Image.open(result[0])
+                        new_width, new_height = img.size
+
+                        # Image is optimal or cannot be upscaled further
+                        # as per previous dimension values
+                        if ((width > height and height > 1000) or \
+                            (height >= width and width > 1000)) and \
+                            (width != last_width and height != last_height):
+
+                            break
+                                
+                        # Image is not optimal, try upscaling again
+                        else:
+                            last_width, last_height = new_width, new_height
+                            current_data = open(result[0], "rb")
+                            await sleep(0.5)
+
+                            retries = retries - 1
+                            continue
+                        
+                if retries == 0:
+                    await conf.edit(
+                        embed=Embed(
+                            color=0xff0000,
+                            description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                        f"Error details: `Retries exhausted. Will not continue.`"
+                        ), delete_after=5)
+                            
+                    # Ended task early, clean up
+                    self.upscale_image_tasks.pop(0)
+                    return
+
+                # Upscaled image is final and ready to send
+                attachment_file = File(result[0], filename=f"{msg.id}.png")
+                
+        # Forget posting if user already deleted message
+        try:
+            await msg.channel.fetch_message(msg.id)
+        except NotFound:
+            if msg.channel.id != 777189629505699850:
+                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+            await conf.edit( 
+                embed=Embed(
+                    description="❌ Operation cancelled."
+            ), delete_after=2)
+
+                
+        else:
+            buffer_target = self.bot.get_channel(789198608175202394)
+            buffer_msg = await buffer_target.send(file=attachment_file)
+
+            await msg.delete()
+            
+            await conf.edit(content="", 
+                embed=Embed(
+                    color=0x32d17f, 
+                    description=f"Uploaded by {msg.author.mention}{'; Upscaled with Waifu2x.' if has_upscaled else ''}"
+                                f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
+                    ).set_image(url=buffer_msg.attachments[0].url
+                    ).set_footer(text=f"UID: {msg.author.id}"))
+
+            await conf.add_reaction("⬆")
+                
+            if msg.channel.id != 777189629505699850:
+                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+
+
+        # Ended task, clean up
+        self.upscale_image_tasks.pop(0)
+        return
+
     # Message events
     # --------------------------------------------------------------------------------------------------------------------------
     @Cog.listener()
@@ -124,250 +399,9 @@ class Events(Cog):
                     delete_after=5)
             
             else:
-                await msg.channel.set_permissions(msg.author, send_messages=False)
-                
-
-                # Check image size due to Discord upload limitations.
-                # Upscale will not be used in this case as the file will most likely be larger.
-                async def file_too_large_prompt():
-                    with suppress(NotFound):
-                        await msg.delete()
-
-                    buffer_target = self.bot.get_channel(789190968267636768)
-                    await buffer_target.set_permissions(msg.author, read_messages=True)
-
-                    conf = await msg.channel.send(msg.author.mention, 
-                        embed=Embed(
-                            color=0xff0000,
-                            description=f"Sorry for the inconvenience, please upload your image in this channel:\n"
-                                        f"{buffer_target.mention}; It is too large for me to send!\n"
-                                        f"\n"
-                                        f"To cancel, send `k-cancel` in the buffer channel.\n"
-                                        f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
-
-                    while True:
-                        try:
-                            m = await self.bot.wait_for("message", timeout=120, check=lambda m: m.author.id == msg.author.id and m.channel.id == 789190968267636768)
-                        except TimeoutError:
-                            await conf.delete()
-                            await buffer_target.edit(overwrites=buffer_target.category.overwrites)
-                        
-                            if msg.channel.id != 777189629505699850:
-                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-                        
-                            return
-
-                        else:
-                            if m.content == "k-cancel":
-                                await buffer_target.send("Alright.", delete_after=2)
-                                await sleep(2)
-                                await buffer_target.edit(overwrites=buffer_target.category.overwrites)
-                                if msg.channel.id != 777189629505699850:
-                                    await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-
-                                await conf.delete()
-
-                                return
-
-                            if not m.attachments:
-                                await buffer_target.send("Attach a file! Please try again.", delete_after=5)
-                                continue
-                        
-                            await buffer_target.send("Thanks!", delete_after=2)
-                            await sleep(2)
-                            await buffer_target.edit(overwrites=buffer_target.category.overwrites)
-                                
-                            await conf.edit(content="", 
-                                embed=Embed(
-                                    color=0x32d17f, 
-                                    description=f"Uploaded by {msg.author.mention}"
-                                                f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
-                                ).set_image(url=m.attachments[0].url
-                                ).set_footer(text=f"UID: {msg.author.id}"))
-
-                            await conf.add_reaction("⬆")
-
-                            if msg.channel.id != 777189629505699850:
-                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-
-                            return
-                
-                attach = msg.attachments[0]
-                if attach.size >= 8000000:
-                    await file_too_large_prompt()
-                    return
-
-                conf = await msg.channel.send(
-                    embed=Embed(
-                        title="Upscaling For Quality",
-                        description=f"{self.bot.get_emoji(813237675553062954)} {msg.author.mention} Please wait..."))
-
-                # Copy attachment
-                dcfileobj = await attach.to_file()
-
-                # Read attachment
-                attach_data = await attach.read()
-                
-                # Check if it's a GIF
-                img = Image.open(BytesIO(attach_data))
-                try:
-                    img.seek(1)
-                except EOFError:
-                    is_animated = False
-                else:
-                    img.seek(0)
-                    is_animated = True
-                
-                if is_animated:  # Skip upscaling and use original attachment
-                    attachment_file = dcfileobj
-                    has_upscaled = False
-                
-                else:  # Continue with checks
-                    
-                    width, height = img.size  # Store original size
-                    
-                    # If smaller dimension is less than 300px, deny upload. 
-                    # Image will look distorted.
-                    if ((width > height and height < 300) or \
-                        (height >= width and width < 300)):
-                        await msg.delete()
-                        await conf.edit(
-                            embed=Embed(
-                                color=0xff0000,
-                                description=f"❌ That image is too small! Please use [Google Images](https://images.google.com/) or [SauceNAO](https://saucenao.com) to check for a larger resolution."
-                            ), delete_after=5)
-
-                        return
-                    
-                    # If smaller dimension is greater than 1000px, skip upscaling
-                    if ((width > height and height > 1000) or \
-                        (height >= width and width > 1000)):
-                        
-                        attachment_file = dcfileobj
-                        has_upscaled = False
-
-                    else:  # Start upscale process
-                        
-                        # Store previous dimensions after upscaling to keep track
-                        last_width, last_height = deepcopy(width), deepcopy(height)
-                        has_upscaled = True
-
-                        current_data = attach_data
-                        retries = 3
-                        # Loop until image is optimal size or exceeded tries
-                        while retries >= 0:
-
-                            # Upload image
-                            async with aiohttp.ClientSession() as cs:
-                                data = aiohttp.FormData()
-                                data.add_field(
-                                    'image', current_data,
-                                    filename=f'image_{msg.id}.jpg',
-                                    content_type='multipart/form-data')
-
-                                r = await cs.post(
-                                    "https://api.deepai.org/api/waifu2x",
-                                    data=data, headers={'api-key': self.bot.auth["DeepAI_key"]}
-                                )
-
-                                r.json = await r.json()
-
-                            """
-                            # Upload image
-                            r = post(
-                                "https://api.deepai.org/api/waifu2x",
-                                files={'image': current_data},
-                                headers={'api-key': self.bot.auth["DeepAI_key"]}
-                            )
-
-                            r.json = r.json()
-                            """
-                            
-                            try:
-                                result = udownload(r.json["output_url"])
-                            except KeyError:
-                                with suppress(NotFound):
-                                    await msg.delete()
-
-                                await conf.edit(
-                                    embed=Embed(
-                                        color=0xff0000,
-                                        description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
-                                                    f"`{r.json['err']}`"
-                                    ), delete_after=5)
-
-                                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-                                return
-                            
-                            else:
-                                # Open returned image and check results
-                                img = Image.open(result[0])
-                                new_width, new_height = img.size
-
-                                # Image is optimal or cannot be upscaled further
-                                # as per previous dimension values
-                                if ((width > height and height > 1000) or \
-                                    (height >= width and width > 1000)) and \
-                                    (width != last_width and height != last_height):
-
-                                    break
-                                
-                                # Image is not optimal, try upscaling again
-                                else:
-                                    last_width, last_height = new_width, new_height
-                                    current_data = open(result[0], "rb")
-                                    await sleep(0.5)
-
-                                    retries = retries - 1
-                                    continue
-                        
-                        if retries == 0:
-                            await conf.edit(
-                                embed=Embed(
-                                    color=0xff0000,
-                                    description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
-                                                f"Error details: `Retries exhausted. Will not continue.`"
-                                ), delete_after=5)
-                            
-                            return
-
-                        # Upscaled image is final and ready to send
-                        attachment_file = File(result[0], filename=f"{msg.id}.png")
-                
-                # Forget posting if user already deleted message
-                try:
-                    await msg.channel.fetch_message(msg.id)
-                except NotFound:
-                    if msg.channel.id != 777189629505699850:
-                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-
-                    await conf.edit( 
-                        embed=Embed(
-                            description="❌ Operation cancelled."
-                    ), delete_after=2)
-
-                    return
-                
-                else:
-                    buffer_target = self.bot.get_channel(789198608175202394)
-                    buffer_msg = await buffer_target.send(file=attachment_file)
-
-                    await msg.delete()
-            
-                    await conf.edit(content="", 
-                        embed=Embed(
-                            color=0x32d17f, 
-                            description=f"Uploaded by {msg.author.mention}{'; Upscaled with Waifu2x.' if has_upscaled else ''}"
-                                        f"{newline+'[' if msg.content else ''}{msg.content}{']' if msg.content else ''}"
-                            ).set_image(url=buffer_msg.attachments[0].url
-                            ).set_footer(text=f"UID: {msg.author.id}"))
-
-                    await conf.add_reaction("⬆")
-                
-                    if msg.channel.id != 777189629505699850:
-                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-
-                    return
+                if self.upscale_image_tasks:
+                    await msg.add_reaction(self.bot.get_emoji(813237675553062954))
+                self.upscale_image_tasks.append(msg)
         
         # Search for message links and reformat.
         link_findings = re.findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", msg.content)
