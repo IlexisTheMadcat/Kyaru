@@ -61,16 +61,19 @@ class Leveling(Cog):
         }
 
         self.level_up_gifs = [
-            "https://cdn.discordapp.com/attachments/741381152543211550/869651824314052658/unknown.gif",
-            "https://i.pinimg.com/originals/2e/27/d5/2e27d5d124bc2a62ddeb5dc9e7a73dd8.gif",
-            "https://cdn.discordapp.com/attachments/722603546024869978/869650507344519270/ezgif-1-4fbad88c84891.gif",
-            "https://gifimage.net/wp-content/uploads/2017/09/anime-head-pat-gif.gif",
-            "https://media.giphy.com/media/ye7OTQgwmVuVy/giphy.gif",
-            "https://media1.tenor.com/images/0ea33070f2294ad89032c69d77230a27/tenor.gif?itemid=16053520",
-            "https://media1.tenor.com/images/ecb87fb2827a022884d5165046f6608a/tenor.gif?itemid=16042548",
-            "https://media1.tenor.com/images/63924d378cf9dbd6f78c2927dde89107/tenor.gif?itemid=15049549",
-            "https://media1.tenor.com/images/57e98242606d651cc992b9525d3de2d8/tenor.gif?itemid=17549072",
-            "https://media1.tenor.com/images/fad9a512808d29f6776e7566f474321c/tenor.gif?itemid=16917926"
+            "https://c.tenor.com/hmzhWv3b9KsAAAAd/anime-head-pat-anime-head-rub.gif",
+            "https://c.tenor.com/BgUAyhqpa10AAAAC/rikka-takanashi.gif",
+            "https://c.tenor.com/7HirBvnxBSYAAAAC/uwu-pats.gif",
+            "https://c.tenor.com/ww4dLFWwpbUAAAAC/neko-head-pats.gif",
+            "https://c.tenor.com/9EVQq2GdJU0AAAAC/wataten-watashi-ni-tenshi-ga-maiorita.gif",
+            "https://c.tenor.com/23nVImsZsB8AAAAC/wataten-head-pat.gif",
+            "https://c.tenor.com/YDuiSAaax_cAAAAC/anime-pat-head-pats.gif",
+            "https://c.tenor.com/YaFzR7EkabYAAAAC/head-pat-anime.gif",
+            "https://c.tenor.com/bfpRP4Feg3oAAAAC/pet-anime.gif",
+            "https://c.tenor.com/pB5LKEouppgAAAAC/pat-pat-on-head.gif",
+            "https://c.tenor.com/Syr2h2fV24EAAAAC/pat-kara.gif",
+            "https://c.tenor.com/aEHAFGnKhZkAAAAC/pat-pats-head.gif",
+            "https://c.tenor.com/edHuxNBD6IMAAAAC/anime-head-pat.gif"
         ]
             
         self.ignored_channels = [
