@@ -313,6 +313,11 @@ class Commands(Cog):
                 f"`{new_name[0:32]}`~~`{new_name[32:len(new_name)]}`~~")
             return
 
+        if not new_name: 
+            await ctx.author.edit(nick=None)
+            await ctx.send("Your nickname has been reset.")
+            return
+
         conf = await ctx.send(
             "Your nickname for Neko Heaven was submitted.\n"
             "This message will be edited with the status.")
@@ -332,13 +337,13 @@ class Commands(Cog):
         await control.add_reaction("❌")
 
         try:
-            r, u = await self.bot.wait_for("reaction_add", timeout=300,
+            r, u = await self.bot.wait_for("reaction_add", timeout=600,
                 check=lambda r,u: u.permissions_in(requests).manage_nicknames and \
                     r.message.id==control.id and not \
                     u.bot and \
                     str(r.emoji) in ["✅", "❌"])
         except TimeoutError:
-            emb.title = f"{ctx.author} ({ctx.author.id}) **(Timed out)**"
+            emb.set_footer(text=f"❌ Timed out")
             await control.edit(embed=emb)
             await conf.edit(content="The nickname request was not answered in time. Try again later.")
             return
@@ -349,29 +354,28 @@ class Commands(Cog):
                 await ctx.author.edit(nick=new_name)
                 self.bot.pause_member_update.remove(ctx.author.id)
                 
-                emb.title = f"{ctx.author} ({ctx.author.id}) **(Approved)**"
-                emb.set_footer(text=f"Approved by {u} ({u.id})")
+                emb.set_footer(text=f"✅ Approved: {u} ({u.id})")
                 await control.edit(embed=emb)
-                
+
+                await ctx.author.edit(nick=new_name)
                 await conf.edit(content="Your nickname request was approved and changed accordingly.")
                 return
             
             elif str(r.emoji) == "❌":
-                emb.title = f"{ctx.author} ({ctx.author.id}) **(Rejected)**"
-                emb.set_footer(text=f"Rejected by {u} ({u.id})")
-                await control.edit(embed=emb)
                 inq = await requests.send("[30s] Short reason?")
 
                 try:
                     m = await self.bot.wait_for("message", timeout=30,
                         check=lambda m: m.author.permissions_in(requests).manage_nicknames and \
-                        m.author.id==u.id and \
-                        m.channel.id==control.channel.id)
+                            m.author.id==u.id and m.channel.id==control.channel.id)
                 except TimeoutError:
                     reason = "None provided"
                 else:
                     reason = m.content
                     await m.delete()
+
+                emb.set_footer(text=f"❌ Rejected: {u} ({u.id})\n📄 Reason: {reason}")
+                await control.edit(embed=emb)
                 
                 await inq.delete()
                 await conf.edit(content=f"Your nickname request was rejected.\nReason: `{reason}`")
