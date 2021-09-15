@@ -345,7 +345,7 @@ class Commands(Cog):
         except TimeoutError:
             emb.set_footer(text=f"❌ Timed out")
             await control.edit(embed=emb)
-            await conf.edit(content="The nickname request was not answered in time. Try again later.")
+            await conf.edit(content="No moderator was available to approve your nickname. Please try again later.")
             return
         
         else:

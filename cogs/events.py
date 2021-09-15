@@ -318,6 +318,101 @@ class Events(Cog):
         self.upscale_image_tasks.pop(0)
         return
 
+    async def confirm_pfp(self, member):
+        user = await self.bot.fetch_user(member.id)
+        guild = member.guild
+        pfps = self.bot.get_channel(862146341538627604)
+                
+        if member.permissions_in(pfps).administrator:
+            return True
+
+        r = post(
+            "https://api.deepai.org/api/nsfw-detector",
+            data={'image': str(user.avatar_url)},
+            headers={'api-key': self.bot.auth["DeepAI_key"]})
+            
+        if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.7:
+            muted_role = utils.get(member.guild.roles, id=741431440490627234)
+            await member.add_roles(muted_role)
+        
+            emb = Embed(
+                title=f"{member} ({member.id})",
+                description="Approve suspicious profile picture:"
+            ).set_image(url=user.avatar_url)
+
+            control = await pfps.send(embed=emb)
+            await control.add_reaction("✅")
+            await control.add_reaction("❌")
+
+            try:
+                r, u = await self.bot.wait_for("reaction_add", timeout=600, 
+                    check=lambda r,u: 767792345239519254 in [role.id for role in u.roles] and \
+                        r.message.id==control.id and not u.bot and str(r.emoji) in ["✅", "❌"])
+            except TimeoutError:
+                emb.set_footer(text="❌ Timed out; User was banned automatically.")
+                await control.edit(embed=emb)
+
+                with suppress(Exception):
+                    await member.send(embed=Embed(
+                        color=0xFFBF00,
+                        title="Warning",
+                        description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                    "\n"
+                                    "❌No mod was available to declare the safety of your profile picture.\n"
+                                    "I cannot accept the risk of letting you stay for now.\n"
+                                    "\n"
+                                    "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                    "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                    "\n"
+                                    "The below image is what was scanned for infringement."
+                        ).set_image(url=str(user.avatar_url)
+                        ).set_footer(text="This test was done by a computer and may not be accurate."))
+
+
+                await guild.ban(member, reason="Auto-banned for NSFW profile picture.")
+                return False
+        
+            else:
+                if str(r.emoji) == "✅":
+                    emb.set_footer(text=f"✅ Approved: {u} ({u.id})")
+                    await control.edit(embed=emb)
+                    await member.remove_roles(muted_role)
+                    return True
+            
+                elif str(r.emoji) == "❌":
+                    inq = await pfps.send("[30s] Short reason?")
+                    try:
+                        m = await self.bot.wait_for("message", timeout=30,
+                            check=lambda m: 767792345239519254 in [role.id for role in m.author.roles] and \
+                            m.author.id==u.id and m.channel.id==control.channel.id)
+                    except TimeoutError:
+                        reason = "None provided"
+                    else:
+                        reason = m.content
+                        await m.delete()
+                
+                    emb.set_footer(text=f"❌ Rejected: {u} ({u.id})\n📄 Reason: {reason}")
+                    await control.edit(embed=emb)
+
+                    await inq.delete()
+                    with suppress(Exception):
+                        await member.send(embed=Embed(
+                            color=0xFFBF00,
+                            title="Warning",
+                            description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                        f"\n"
+                                        f"Reason: `{reason}`\n"
+                                        f"\n"
+                                        "Due to this, you've been banned from Neko Heaven following server rules. If you believe this was in error, "
+                                        f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                        f"\n"
+                                        f"The below image is what was scanned for infringement."
+                            ).set_image(url=str(user.avatar_url)
+                            ).set_footer(text="This test was done by a computer and may not be accurate."))
+
+                    await guild.ban(member, reason="Moderator approved bann for NSFW profile picture.")
+                    return False
+
     # Message events
     # --------------------------------------------------------------------------------------------------------------------------
     @Cog.listener()
@@ -732,100 +827,9 @@ class Events(Cog):
     async def on_member_join(self, member):
         if member.guild.id == 740662779106689055 and not member.bot:
             guild = self.bot.get_guild(740662779106689055)
-
-            if not member:
+            # Scan for NSFW
+            if not await self.confirm_pfp(member):
                 return
-
-            user = await self.bot.fetch_user(member.id)
-            r = post(
-                "https://api.deepai.org/api/nsfw-detector",
-                data={'image': str(user.avatar_url)},
-                headers={'api-key': self.bot.auth["DeepAI_key"]})
-            
-            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.7:
-                muted_role = utils.get(member.guild.roles, id=741431440490627234)
-                await member.add_roles(muted_role)
-        
-                emb = Embed(
-                    title=f"{member} ({member.id})",
-                    description="Approve suspicious profile picture:"
-                ).set_image(url=user.avatar_url)
-
-                pfps = self.bot.get_channel(862146341538627604)
-                control = await pfps.send(embed=emb)
-                await control.add_reaction("✅")
-                await control.add_reaction("❌")
-
-                try:
-                    r, u = await self.bot.wait_for("reaction_add", timeout=60*15, 
-                        check=lambda r,u: u.permissions_in(pfps).kick_members and \
-                        r.message.id==control.id and not \
-                        u.bot and \
-                        str(r.emoji) in ["✅", "❌"])
-                except TimeoutError:
-                    emb.title = f"{member} ({member.id}) **(Timed out)**"
-                    emb.set_footer(text="User was kicked automatically.")
-                    await control.edit(embed=emb)
-
-                    with suppress(Forbidden):
-                        await member.send(embed=Embed(
-                            color=0xFFBF00,
-                            title="Warning",
-                            description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                        "\n"
-                                        "❌No mod was available to declare the safety of your profile picture. I cannot accept the risk of letting you stay for now.\n"
-                                        "\n"
-                                        "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
-                                        "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                        "\n"
-                                        "The below image is what was scanned for infringement."
-                            ).set_image(url=str(user.avatar_url)
-                            ).set_footer(text="This test was done by a computer and may not be accurate."))
-        
-                else:
-                    if str(r.emoji) == "✅":
-                        emb.title = f"{member} ({member.id}) **(Approved)**"
-                        emb.set_footer(text=f"Approved by {u} ({u.id})")
-                        await control.edit(embed=emb)
-
-                        await member.remove_roles(muted_role)
-            
-                    elif str(r.emoji) == "❌":
-                        emb.title = f"{member} ({member.id}) **(Rejected)**"
-                        emb.set_footer(text=f"Rejected by {u} ({u.id})")
-                        await control.edit(embed=emb)
-                        inq = await pfps.send("[30s] Short reason?")
-
-                        try:
-                            m = await self.bot.wait_for("message", timeout=30,
-                                check=lambda m: m.author.permissions_in(pfps).manage_nicknames and \
-                                m.author.id==u.id and \
-                                m.channel.id==control.channel.id)
-                        except TimeoutError:
-                            reason = "❌The moderator did not provide a reason."
-                        else:
-                            reason = f"The moderator provided this reason confirming my suspicion: **`{m.content}`**"
-                            await m.delete()
-                
-                        await inq.delete()
-
-                        with suppress(Forbidden):
-                            await member.send(embed=Embed(
-                                color=0xFFBF00,
-                                title="Warning",
-                                description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                            f"\n"
-                                            f"{reason}\n"
-                                            f"\n"
-                                            "Due to this, you've been soft-banned from Neko Heaven following server rules. If you believe this was in error, "
-                                            f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                            f"\n"
-                                            f"The below image is what was scanned for infringement."
-                                ).set_image(url=str(user.avatar_url)
-                                ).set_footer(text="This test was done by a computer and may not be accurate."))
-
-                        await guild.ban(member)
-                        return
 
             img = Image.open(BytesIO(await member.avatar_url_as(format='png').read())).convert("RGBA")
             
@@ -931,102 +935,10 @@ class Events(Cog):
         # Detect avatar change and scan for NSFW
         if str(pos.avatar_url) and str(pos.avatar_url) != str(pre.avatar_url):
             guild = self.bot.get_guild(740662779106689055)
-            member = guild.get_member(pos.id)
-
-            if not member:
+            try: member = await guild.fetch_member(pos.id)
+            except NotFound: return
+            if member and not await self.confirm_pfp(member):
                 return
-
-            user = await self.bot.fetch_user(member.id)
-            r = post(
-                "https://api.deepai.org/api/nsfw-detector",
-                data={'image': str(user.avatar_url)},
-                headers={'api-key': self.bot.auth["DeepAI_key"]})
-            
-            if 'output' in r.json() and r.json()['output']['nsfw_score'] > 0.7:
-                muted_role = utils.get(member.guild.roles, id=741431440490627234)
-                await member.add_roles(muted_role)
-        
-                emb = Embed(
-                    title=f"{member} ({member.id})",
-                    description="Approve suspicious profile picture:"
-                ).set_image(url=user.avatar_url)
-
-                pfps = self.bot.get_channel(862146341538627604)
-                control = await pfps.send(embed=emb)
-                await control.add_reaction("✅")
-                await control.add_reaction("❌")
-
-                try:
-                    r, u = await self.bot.wait_for("reaction_add", timeout=60*15, 
-                        check=lambda r,u: u.permissions_in(pfps).kick_members and \
-                        r.message.id==control.id and not \
-                        u.bot and \
-                        str(r.emoji) in ["✅", "❌"])
-                except TimeoutError:
-                    emb.title = f"{member} ({member.id}) **(Timed out)**"
-                    emb.set_footer(text="User was kicked automatically.")
-                    await control.edit(embed=emb)
-
-                    await member.send(embed=Embed(
-                        color=0xFFBF00,
-                        title="Warning",
-                        description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                    "\n"
-                                    "❌No mod was available to declare the safety of your profile picture. I cannot accept the risk of letting you stay for now.\n"
-                                    "\n"
-                                    "Due to this, you've been automatically banned from Neko Heaven following server rules. If you believe this was in error, "
-                                    "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                    "\n"
-                                    "The below image is what was scanned for infringement."
-                        ).set_image(url=str(user.avatar_url)
-                        ).set_footer(text="This test was done by a computer and may not be accurate."))
-
-                    await guild.ban(member)
-                    return
-        
-                else:
-                    if str(r.emoji) == "✅":
-                        emb.title = f"{member} ({member.id}) **(Approved)**"
-                        emb.set_footer(text=f"Approved by {u} ({u.id})")
-                        await control.edit(embed=emb)
-
-                        await member.remove_roles(muted_role)
-                        return
-            
-                    elif str(r.emoji) == "❌":
-                        emb.title = f"{member} ({member.id}) **(Rejected)**"
-                        emb.set_footer(text=f"Rejected by {u} ({u.id})")
-                        await control.edit(embed=emb)
-                        inq = await pfps.send("[30s] Short reason?")
-
-                        try:
-                            m = await self.bot.wait_for("message", timeout=30,
-                                check=lambda m: m.author.permissions_in(pfps).manage_nicknames and \
-                                m.author.id==u.id and \
-                                m.channel.id==control.channel.id)
-                        except TimeoutError:
-                            reason = "❌The moderator did not provide a reason."
-                        else:
-                            reason = f"The moderator provided this reason confirming my suspicion: **`{m.content}`**"
-                            await m.delete()
-                
-                        await inq.delete()
-                        await member.send(embed=Embed(
-                            color=0xFFBF00,
-                            title="Warning",
-                            description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                        f"\n"
-                                        f"{reason}\n"
-                                        f"\n"
-                                        "Due to this, you've been banned from Neko Heaven following server rules. If you believe this was in error, "
-                                        f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                        f"\n"
-                                        f"The below image is what was scanned for infringement."
-                            ).set_image(url=str(user.avatar_url)
-                            ).set_footer(text="This test was done by a computer and may not be accurate."))
-
-                        await guild.ban(member)
-                        return
 
     # Catgirl Heaven server icon changes
     # --------------------------------------------------------------------------------------------------------------------------
