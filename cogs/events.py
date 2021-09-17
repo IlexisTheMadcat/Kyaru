@@ -422,7 +422,7 @@ class Events(Cog):
         else: self.bot.global_cooldown.update({msg.author.id:"placeholder"})
         
         # Don't respond to bots.
-        if msg.author.bot:
+        if msg.author.bot and not msg.author.id == 801805025424179230:
             return
 
         # For this bot, user data is generated on member join.
@@ -469,6 +469,8 @@ class Events(Cog):
                             title="Extension Not Allowed",
                             description="Your file names must end in any of the following: [.jpg, .jpeg, .png, .gif, .mp4]",
                         ), delete_after=5)
+            
+            return
 
         # Upscale media uploads in these categories
         if msg.guild and msg.channel.category and msg.channel.category.id in \
@@ -497,7 +499,9 @@ class Events(Cog):
                 if self.upscale_image_tasks:
                     await msg.add_reaction(self.bot.get_emoji(813237675553062954))
                 self.upscale_image_tasks.append(msg)
-        
+            
+            return
+
         # Search for message links and reformat.
         link_findings = re.findall("https://(?:discord|discordapp).com/channels/[0-9]{18}/[0-9]{18}/[0-9]{18}", msg.content)
         if len(link_findings) > 5:
@@ -612,53 +616,8 @@ class Events(Cog):
                     await msg.clear_reactions()
                     await conf.delete()
 
-        # Allow sniped users to protect their message from Dank Memer
-        if (msg.content.lower().startswith("pls snipe") or \
-            msg.content.lower().startswith("pls sniper") or \
-            msg.content.lower().startswith("pls editsnipe")) and \
-            msg.guild and msg.guild.me.permissions_in(msg.channel).manage_messages:
+            return
 
-            while True:
-                try:
-                    snipe = await self.bot.wait_for("message", timeout=5, check=lambda m:m.author.id==270904126974590976 and (not m.content or m.content.startswith("**Handy Dandy Tip**")) and m.embeds)
-                except TimeoutError:
-                    pass
-                else:
-                    try:
-                        extraction = snipe.embeds[0].author.icon_url
-                    except IndexError:
-                        continue
-                    
-                    user_id = extraction.split("/")[4]
-                    if not self.bot.get_user(int(user_id)):
-                        continue
-
-                    user_id1 = msg.author.id
-                    user_id2 = int(user_id)
-
-                    await snipe.add_reaction("❌")
-                    try:
-                        reaction, user = await self.bot.wait_for("reaction_add", timeout=10,
-                            check=lambda r,u:str(r.emoji)=="❌" and \
-                                u.id in [user_id1, user_id2] or \
-                                (u.permissions_in(msg.channel).manage_messages and \
-                                u!=self.bot.user))
-                        
-                    except TimeoutError:
-                        await snipe.remove_reaction("❌", self.bot.user)
-                    else:
-                        # await snipe.delete() # vv
-                        await self.bot.http.delete_message(
-                            snipe.channel.id,
-                            snipe.id)
-                            
-                        await sleep(0.3)
-                        
-                        # await msg.delete() # vv
-                        await self.bot.http.delete_message(
-                            msg.channel.id,
-                            msg.message.id)
-    
     # Post actions
     @Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -723,13 +682,13 @@ class Events(Cog):
                     member.mention,
                     embed=Embed(
                         title="Moving Post", 
-                        description=f"{self.bot.get_emoji(813237675553062954)} Moderator, please mention the channel\n"
+                        description=f"Moderator, please mention the channel\n"
                                     f"you want this post to be moved into.\n"
                                     f"\n"
                                     f"{copied_embed.description}",
                         color=0x32d17f
                     ).set_image(url=copied_embed.image.url
-                    ).set_footer(text=copied_embed.footer.text+" (Type `-cancel` to cancel)"))
+                    ).set_footer(text=copied_embed.footer.text+" (Type `k-cancel` to cancel)"))
                     
                 
                 while True:
@@ -750,7 +709,7 @@ class Events(Cog):
                         break
 
                     else:
-                        if msg.content == "-cancel":
+                        if msg.content == "k-cancel":
                             await message.remove_reaction(payload.emoji, member)
                             await msg.delete()
                             await edit.delete()
@@ -808,14 +767,6 @@ class Events(Cog):
                         await message.delete()
                         post = await new_channel.send(embed=copied_embed)
                         await post.add_reaction("⬆️")
-
-                        await edit.edit(
-                            content=member.mention,
-                            embed=Embed(
-                                title="Moved Post", 
-                                description=f":white_check_mark: Moderator, please mention the channel you want this post to be moved into.",
-                                color=0x32d17f
-                            ).set_footer(text="I asked here because I would react differently if you responded in that channel."))
                         await bot_spam.send(embed=Embed(description=f"Done. Moved post from {channel.mention} to {new_channel.mention}."))
 
                         break
