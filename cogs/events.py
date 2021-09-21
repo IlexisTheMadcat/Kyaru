@@ -413,6 +413,9 @@ class Events(Cog):
                     await guild.ban(member, reason="Moderator approved bann for NSFW profile picture.")
                     return False
 
+        else:
+            return True
+
     # Message events
     # --------------------------------------------------------------------------------------------------------------------------
     @Cog.listener()
