@@ -334,8 +334,8 @@ class Commands(Cog):
         
         control = await requests.send(embed=emb, 
             components=[
-                [Button(emoji="✅", style=2, id="allow", label="Allow"),
-                Button(emoji="❌", style=1, id="decline", label="Decline")]
+                [Button(emoji="✅", style=1, id="allow", label="Allow"),
+                Button(emoji="❌", style=2, id="decline", label="Decline")]
             ])
 
         while True:
