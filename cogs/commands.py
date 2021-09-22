@@ -332,7 +332,11 @@ class Commands(Cog):
                         f"+ {new_name if new_name else '[No Nickname]'}\n"
                         f"```")
         
-        
+        control = await requests.send(embed=emb, 
+            components=[
+                [Button(emoji="✅", style=2, id="allow", label="Allow"),
+                Button(emoji="❌", style=1, id="decline", label="Decline")]
+            ])
 
         while True:
             try:
