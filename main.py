@@ -128,9 +128,6 @@ del found_data  # Remove variable from namespace
 
 db.update(user_data)
 
-print("[BOT INIT] Configurations loaded.")
-
-
 intents = Intents.default()
 intents.members = True
 intents.presences = True

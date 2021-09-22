@@ -15,6 +15,7 @@ from discord.ext.commands import cooldown, BucketType, is_owner
 from discord.ext.commands.cog import Cog
 from discord.ext.commands.context import Context
 from discord.ext.commands.core import bot_has_permissions, has_permissions, command
+from discord_components import Button
 
 from utils.classes import Embed
 
@@ -331,55 +332,83 @@ class Commands(Cog):
                         f"+ {new_name if new_name else '[No Nickname]'}\n"
                         f"```")
         
-        control = await requests.send(embed=emb)
-        
-        await control.add_reaction("✅")
-        await control.add_reaction("❌")
+        control = await requests.send(embed=emb, 
+            components=[
+                [Button(emoji="✅", style=2, id="allow", label="Allow"),
+                Button(emoji="❌", style=1, id="decline", label="Decline")]
+            ])
 
-        try:
-            r, u = await self.bot.wait_for("reaction_add", timeout=600,
-                check=lambda r,u: u.permissions_in(requests).manage_nicknames and \
-                    r.message.id==control.id and not \
-                    u.bot and \
-                    str(r.emoji) in ["✅", "❌"])
-        except TimeoutError:
-            emb.set_footer(text=f"❌ Timed out")
-            await control.edit(embed=emb)
-            await conf.edit(content="No moderator was available to approve your nickname. Please try again later.")
-            return
-        
-        else:
-            if str(r.emoji) == "✅":
-                self.bot.pause_member_update.append(ctx.author.id)
-                await ctx.author.edit(nick=new_name)
-                self.bot.pause_member_update.remove(ctx.author.id)
-                
-                emb.set_footer(text=f"✅ Approved: {u} ({u.id})")
-                await control.edit(embed=emb)
+        while True:
+            try:
+                interaction = await self.bot.wait_for("button_click", timeout=600, 
+                    check=lambda i: 767792345239519254 in [role.id for role in i.user.roles] and i.message.id==control.id)
+            except TimeoutError:
+                emb.set_footer(text=f"❌ Timed out")
+                await control.edit(embed=emb, components=[])
 
-                await ctx.author.edit(nick=new_name)
-                await conf.edit(content="Your nickname request was approved and changed accordingly.")
+                await conf.edit(content="No moderator was available to approve your nickname. Please try again later.")
                 return
+            else:
+                try: await interaction.respond(type=6)
+                except Exception: continue
+
+                if interaction.component.id == "allow":
+                    emb.set_footer(text=f"✅ Approved: {interaction.user} ({interaction.user.id})")
+                    await control.edit(embed=emb, components=[])
+
+                    self.bot.pause_member_update.append(ctx.author.id)
+                    await ctx.author.edit(nick=new_name)
+                    self.bot.pause_member_update.remove(ctx.author.id)
+
+                    await conf.edit("Your nickname was approved and changed accordingly.")
+
+                    return
             
-            elif str(r.emoji) == "❌":
-                inq = await requests.send("[30s] Short reason?")
+                elif interaction.component.id == "decline":
+                    emb.set_footer(text=f"❌ Rejected: {interaction.user} ({interaction.user.id})\n📄 Reason: [TBD]")
+                    await control.edit(embed=emb, components=[])   
+                    
+                    inq = await requests.send(embed=Embed(
+                        description="Please type your reason within 2 minutes.\n"
+                                    "Send `skip` to leave blank.\n"
+                                    "Send `nvm` to cancel and approve."))
 
-                try:
-                    m = await self.bot.wait_for("message", timeout=30,
-                        check=lambda m: m.author.permissions_in(requests).manage_nicknames and \
-                            m.author.id==u.id and m.channel.id==control.channel.id)
-                except TimeoutError:
-                    reason = "None provided"
-                else:
-                    reason = m.content
-                    await m.delete()
+                    try:
+                        m = await self.bot.wait_for("message", timeout=120,
+                            check=lambda m: 767792345239519254 in [role.id for role in m.author.roles] and \
+                                m.author.id==interaction.user.id and m.channel.id==control.channel.id)
+                    except TimeoutError:
+                        await inq.delete()
+                        reason = "None provided"
+                    else:
+                        await m.delete()
+                        await inq.delete()
 
-                emb.set_footer(text=f"❌ Rejected: {u} ({u.id})\n📄 Reason: {reason}")
-                await control.edit(embed=emb)
-                
-                await inq.delete()
-                await conf.edit(content=f"Your nickname request was rejected.\nReason: `{reason}`")
-                return
+                        if m.content in ["nvm", "Nvm", "NVM"]:
+                            emb.set_footer(text=f"✅ Approved: {interaction.user} ({interaction.user.id})")
+                            await control.edit(embed=emb, components=[])
+
+                            self.bot.pause_member_update.append(ctx.author.id)
+                            await ctx.author.edit(nick=new_name)
+                            self.bot.pause_member_update.remove(ctx.author.id)
+
+                            await conf.edit("Your nickname was approved and changed accordingly.")
+
+                            return
+
+                        elif m.content in ["skip", "Skip", "SKIP"]:
+                            reason = "None provided"
+                        else:
+                            reason = m.content
+
+                    emb.set_footer(text=f"❌ Rejected: {interaction.user} ({interaction.user.id})\n📄 Reason: {reason}")
+                    await control.edit(embed=emb, components=[])   
+         
+                    await conf.edit(
+                        f"Your nickname was rejected.\n"
+                        f"Reason: {reason}")
+
+                    return
     
     # EVENT related commands.
     # Code that is related to an event is commented with "EVENT".

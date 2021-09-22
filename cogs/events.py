@@ -27,6 +27,7 @@ from discord.ext.commands.errors import (
     NotOwner, BadArgument,
     CheckFailure
 )
+from discord_components import Button
 from discord.ext.tasks import loop
 
 from utils.classes import Embed
@@ -340,78 +341,103 @@ class Events(Cog):
                 description="Approve suspicious profile picture:"
             ).set_image(url=user.avatar_url)
 
-            control = await pfps.send(embed=emb)
-            await control.add_reaction("✅")
-            await control.add_reaction("❌")
+            control = await pfps.send(embed=emb, 
+                components=[
+                    [Button(emoji="✅", style=2, id="allow", label="Allow"),
+                    Button(emoji="❌", style=1, id="ban", label="Ban")]
+                ])
 
-            try:
-                r, u = await self.bot.wait_for("reaction_add", timeout=600, 
-                    check=lambda r,u: 767792345239519254 in [role.id for role in u.roles] and \
-                        r.message.id==control.id and not u.bot and str(r.emoji) in ["✅", "❌"])
-            except TimeoutError:
-                emb.set_footer(text="❌ Timed out; User was banned automatically.")
-                await control.edit(embed=emb)
-
-                with suppress(Exception):
-                    await member.send(embed=Embed(
-                        color=0xFFBF00,
-                        title="Warning",
-                        description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                    "\n"
-                                    "❌No mod was available to declare the safety of your profile picture.\n"
-                                    "I cannot accept the risk of letting you stay for now.\n"
-                                    "\n"
-                                    "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
-                                    "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                    "\n"
-                                    "The below image is what was scanned for infringement."
-                        ).set_image(url=str(user.avatar_url)
-                        ).set_footer(text="This test was done by a computer and may not be accurate."))
-
-
-                await guild.ban(member, reason="Auto-banned for NSFW profile picture.")
-                return False
-        
-            else:
-                if str(r.emoji) == "✅":
-                    emb.set_footer(text=f"✅ Approved: {u} ({u.id})")
-                    await control.edit(embed=emb)
-                    await member.remove_roles(muted_role)
-                    return True
-            
-                elif str(r.emoji) == "❌":
-                    inq = await pfps.send("[30s] Short reason?")
-                    try:
-                        m = await self.bot.wait_for("message", timeout=30,
-                            check=lambda m: 767792345239519254 in [role.id for role in m.author.roles] and \
-                            m.author.id==u.id and m.channel.id==control.channel.id)
-                    except TimeoutError:
-                        reason = "None provided"
-                    else:
-                        reason = m.content
-                        await m.delete()
-                
-                    emb.set_footer(text=f"❌ Rejected: {u} ({u.id})\n📄 Reason: {reason}")
+            while True:
+                try:
+                    interaction = await self.bot.wait_for("button_click", timeout=600, 
+                        check=lambda i: 767792345239519254 in [role.id for role in i.user.roles] and i.message.id==control.id)
+                except TimeoutError:
+                    emb.set_footer(text="❌ Timed out; User was banned automatically.")
                     await control.edit(embed=emb)
 
-                    await inq.delete()
                     with suppress(Exception):
                         await member.send(embed=Embed(
                             color=0xFFBF00,
                             title="Warning",
-                            description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
-                                        f"\n"
-                                        f"Reason: `{reason}`\n"
-                                        f"\n"
-                                        "Due to this, you've been banned from Neko Heaven following server rules. If you believe this was in error, "
-                                        f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
-                                        f"\n"
-                                        f"The below image is what was scanned for infringement."
+                            description="I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                        "\n"
+                                        "❌No mod was available to declare the safety of your profile picture.\n"
+                                        "I cannot accept the risk of letting you stay for now.\n"
+                                        "\n"
+                                        "Due to this, you've been automatically soft-banned from Neko Heaven following server rules. If you believe this was in error, "
+                                        "please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                        "\n"
+                                        "The below image is what was scanned for infringement."
                             ).set_image(url=str(user.avatar_url)
                             ).set_footer(text="This test was done by a computer and may not be accurate."))
 
-                    await guild.ban(member, reason="Moderator approved bann for NSFW profile picture.")
+                    await guild.ban(member, reason="Auto-banned for NSFW profile picture.")
                     return False
+        
+                else:
+                    try: await interaction.respond(type=6)
+                    except Exception: continue
+
+                    if interaction.component.id == "allow":
+                        emb.set_footer(text=f"✅ Approved: {interaction.user} ({interaction.user.id})")
+                        await control.edit(embed=emb, components=[])
+
+                        await member.remove_roles(muted_role)
+                        return True
+            
+                    elif interaction.component.id == "ban":
+                    
+                        emb.set_footer(text=f"❌ Rejected: {interaction.user} ({interaction.user.id})\n📄 Reason: [TBD]")
+                        await control.edit(embed=emb, components=[])   
+                    
+                        inq = await pfps.send(embed=Embed(
+                            description="Please type your reason within 2 minutes.\n"
+                                        "Send `skip` to leave blank.\n"
+                                        "Send `nvm` to cancel and approve."))
+
+                        try:
+                            m = await self.bot.wait_for("message", timeout=120,
+                                check=lambda m: 767792345239519254 in [role.id for role in m.author.roles] and \
+                                    m.author.id==interaction.user.id and m.channel.id==control.channel.id)
+                        except TimeoutError:
+                            await inq.delete()
+                            reason = "None provided"
+                        else:
+                            await m.delete()
+                            await inq.delete()
+
+                            if m.content in ["nvm", "Nvm", "NVM"]:
+                                emb.set_footer(text=f"✅ Approved: {interaction.user} ({interaction.user.id})")
+                                await control.edit(embed=emb, components=[])
+
+                                await member.remove_roles(muted_role)
+                                return True
+
+                            elif m.content in ["skip", "Skip", "SKIP"]:
+                                reason = "None provided"
+                            else:
+                                reason = m.content
+
+                        emb.set_footer(text=f"❌ Rejected: {interaction.user} ({interaction.user.id})\n📄 Reason: {reason}")
+                        await control.edit(embed=emb, components=[])   
+         
+                        with suppress(Exception):
+                            await member.send(embed=Embed(
+                                color=0xFFBF00,
+                                title="Warning",
+                                description=f"I've used a computer algorithm to determine that your profile picture is considered NSFW and against Discord's Terms of Service.\n"
+                                            f"\n"
+                                            f"Moderator's reason: `{reason}`\n"
+                                            f"\n"
+                                            "Due to this, you've been banned from Neko Heaven following server rules. If you believe this was in error, "
+                                            f"please join the appeal server [here](https://discord.gg/3RYGFrbsuJ) to discuss the situation.\n"
+                                            f"\n"
+                                            f"The below image is what was scanned for infringement."
+                                ).set_image(url=str(user.avatar_url)
+                                ).set_footer(text="This test was done by a computer and may not be accurate."))
+
+                        await guild.ban(member, reason="Moderator approved ban for NSFW profile picture.")
+                        return False
 
         else:
             return True
