@@ -4,8 +4,8 @@ from sys import exc_info
 from typing import List
 
 from discord import Embed as DiscordEmbed
-from discord.ext.commands.bot import Bot as DiscordBot
 from expiringdict import ExpiringDict
+from discord_components import ComponentsBot as DiscordBot
 
 # Override default color for bot fanciness
 class Embed(DiscordEmbed):
