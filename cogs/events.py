@@ -502,8 +502,15 @@ class Events(Cog):
             return
 
         # Upscale media uploads in these categories
-        if msg.guild and msg.channel.category and msg.channel.category.id in \
-            [740663474568560671, 740663386500628570]:
+        if msg.guild and msg.channel.category and msg.channel.category.id == 740663474568560671 and \
+            msg.channel.id not in [
+                890646250553245726,  # Dividers
+                890646335781482517, 
+                890646878302126120,
+                815027417399558154,  # Other channels
+                870342656314736720, 
+                866172671544524830
+            ]:
             if not msg.attachments:
                 await msg.delete()
                 await msg.channel.send(content=msg.author.mention, embed=Embed(
