@@ -6,6 +6,7 @@ from discord.enums import ActivityType, Status
 from discord.ext.commands.cog import Cog
 from discord.ext.tasks import loop
 
+from utils.classes import Embed
 
 class BackgroundTasks(Cog):
     """Background loops"""
@@ -14,6 +15,7 @@ class BackgroundTasks(Cog):
         self.bot = bot
         self.save_data.start()
         self.status_change.start()
+        self.disboard_reminder.start()
 
     @loop(seconds=60)
     async def status_change(self):
@@ -35,7 +37,7 @@ class BackgroundTasks(Cog):
                 name=f"{self.bot.command_prefix} | UTC: {time}")
 
         await self.bot.change_presence(status=status, activity=activity)
-    
+
     @loop(seconds=57.5)
     async def save_data(self):
         # If the repl is exited while saving, data may be corrupted or reset.
@@ -48,7 +50,19 @@ class BackgroundTasks(Cog):
 
         self.bot.inactive = self.bot.inactive + 1
         print(f"[NHK: {time}] Running.")
-    
+   
+    @loop(hours=5)
+    async def disboard_reminder(self):
+        bot_spam = await self.bot.fetch_channel(740671751293501592)
+        await bot_spam.send(embed=Embed(
+            color=0x24b7b7,
+            title="DISBOARD Reminder",
+            description="Hey, did you know you can help expand this server in one message?\n"
+                        "Type `!d bump` to increase the visibility of this server on [Disboard.org](https://disboard.org/).\n"
+                        "To further expose this server to a larger audience, head to <#754548692010270720> and follow each link!"
+        ).set_footer(text="ℹ️ You will have to log in with Discord on the external sites."
+        ).set_thumbnail(url="https://cdn.discordapp.com/attachments/742481946030112779/891745342431850576/unknown.png"))
+
     @status_change.before_loop
     async def sc_wait(self):
         await self.bot.wait_until_ready()
@@ -59,9 +73,15 @@ class BackgroundTasks(Cog):
         await self.bot.wait_until_ready()
         await sleep(15)
 
+    @disboard_reminder.before_loop
+    async def dr_wait(self):
+        await self.bot.wait_until_ready()
+        await sleep(60)
+
     def cog_unload(self):
         self.status_change.cancel()
         self.save_data.cancel()
+        self.disboard_reminder.cancel()
 
 def setup(bot):
     bot.add_cog(BackgroundTasks(bot))
