@@ -74,11 +74,11 @@ class Events(Cog):
             buffer_target = self.bot.get_channel(789190968267636768)
             await buffer_target.set_permissions(msg.author, read_messages=True)
 
-            conf = await msg.channel.send(msg.author.mention, 
+            conf = await msg.channel.send(
+                content=f"{msg.author.mention}, {buffer_target.mention}", 
                 embed=Embed(
                     color=0xff0000,
-                    description=f"Sorry for the inconvenience, please upload your image in this channel:\n"
-                                f"{buffer_target.mention}; It is too large for me to send!\n"
+                    description=f"Sorry for the inconvenience, please upload your image in the mentioned channel, it is too large for me to send!\n"
                                 f"\n"
                                 f"To cancel, send `k-cancel` in the buffer channel.\n"
                                 f"{self.bot.get_emoji(813237675553062954)} Waiting... (120s)"))
