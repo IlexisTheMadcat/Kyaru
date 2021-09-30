@@ -1,0 +1,48 @@
+{
+  "books": [
+    {
+      "title": "Relevant Books",
+      "description": "Catgirl in the Pantry\nScott Sinclair (<@56151667749421056>)\n[Get from Amazon Kindle eBooks](https://www.amazon.com/Catgirl-Pantry-anime-inspired-reverse-adventure-ebook/dp/B08GY51X3L/)",
+      "color": 3330431,
+      "image": {
+        "url": "https://m.media-amazon.com/images/I/412vK4aptbL.jpg"
+      }
+    },
+
+    {
+      "title": "Relevant Books",
+      "description": "Catgirl Docter (Multi-volume series) :underage:\nBrandon Varnell\n[Get from Amazon Kindle eBooks](https://www.amazon.com/Catgirl-Doctor-Vol-Brandon-Varnell-ebook/dp/B087YVJWJV/)",
+      "color": 3330431,
+      "image": {
+        "url": "https://m.media-amazon.com/images/I/51j36iJwODL.jpg"
+      }
+    },
+
+    {
+      "title": "Relevant Books",
+      "description": "Dorm Room Cat-Girl\nC.S. James\n[Get from Amazon Kindle eBooks](https://www.amazon.com/Dorm-Room-Cat-Girl-Anime-Inspired-ebook/dp/B088R7RRXS/)",
+      "color": 3330431,
+      "image": {
+        "url": "https://m.media-amazon.com/images/I/51sFyPymvHL.jpg"
+      }
+    },
+
+    {
+      "title": "Relevant Books",
+      "description": "Ears and Tail Required 1/2 :underage:\nHeidi Fisk\n[Get from Amazon Kindle eBooks](https://www.amazon.com/Ears-Tail-Required-Bundle-Erotica-ebook/dp/B07CXJK419/)",
+      "color": 3330431,
+      "image": {
+        "url": "https://m.media-amazon.com/images/I/518hKck7LEL.jpg"
+      }
+    },
+
+    {
+      "title": "Relevant Books",
+      "description": "Reincarnated as a Sword (Multi-volume series)\nYuu Tanaka / Llo\n[Get from Amazon Kindle eBooks](https://www.amazon.com/Reincarnated-Sword-Light-Novel-Vol-ebook/dp/B07NW2WJKQ/)",
+      "color": 3330431,
+      "image": {
+        "url": "https://m.media-amazon.com/images/I/51nxTxj7oNL.jpg"
+      }
+    }
+  ]
+}
