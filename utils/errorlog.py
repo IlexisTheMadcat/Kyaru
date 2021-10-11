@@ -217,6 +217,16 @@ class ErrorLog:
 
         em = Embed(color=Colour.red(), title=title, description=f"{description}")
 
+        if hasattr(ctx, "author"):
+            em.add_field(
+                name="Context",
+                inline=False,
+                value=f"User: `{ctx.author}` ({ctx.author.id})\n"
+                      f"Guild: `{ctx.guild if ctx.guild else 'Unavailable'}` ({ctx.guild.id if ctx.guild else '0'})\n"
+                      f"Channel: `{ctx.channel}` ({ctx.channel.id})\n"
+                      f"Message: `{ctx.message.content if ctx.message.content else 'No Content'}`\n"
+                      f"**Copy this message ID and access `bot.error_contexts[<id>]` for Context.**")
+        
         try:
             em.set_footer(text=f"This event was caused by user {ctx.author} ({ctx.author.id})")
         except AttributeError:
