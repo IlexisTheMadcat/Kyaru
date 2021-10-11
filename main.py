@@ -180,7 +180,7 @@ async def on_ready():
             continue
         
         except Exception as e:
-            if hasattr(error, "original"):
+            if hasattr(e, "original"):
                 print(f"| Failed to load extension {cog}\n|   {type(e.original).__name__}: {e.original}")
             else:
                 print(f"| Failed to load extension {cog}\n|   {type(e).__name__}: {e}")
