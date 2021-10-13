@@ -51,15 +51,15 @@ class Events(Cog):
     @loop(seconds=1)
     async def upscale_image_task(self):
         if not self.upscale_image_tasks: return
+        else: msg = self.upscale_image_tasks[0]
 
-        msg = self.upscale_image_tasks[0]
+        def finish():
+            self.upscale_image_tasks.pop(0)
 
         try:
             await msg.channel.fetch_message(msg.id)
         except NotFound:
-            # Ended task early, clean up
-            self.upscale_image_tasks.pop(0)
-            return
+            return finish()
 
         # Start task process
         await msg.clear_reactions()
@@ -101,7 +101,12 @@ class Events(Cog):
                         await sleep(2)
                         await buffer_target.edit(overwrites=buffer_target.category.overwrites)
                         if msg.channel.id != 777189629505699850:
-                            await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                            if msg.channel.is_nsfw():
+                                category = await self.bot.fetch_channel(740663386500628570)
+                            else:
+                                category = await self.bot.fetch_channel(897696876319625286)
+
+                            await msg.channel.edit(overwrites=category.overwrites)
 
                         await conf.delete()
 
@@ -126,17 +131,19 @@ class Events(Cog):
                     await conf.add_reaction("⬆")
 
                     if msg.channel.id != 777189629505699850:
-                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                        if msg.channel.is_nsfw():
+                            category = await self.bot.fetch_channel(740663386500628570)
+                        else:
+                            category = await self.bot.fetch_channel(897696876319625286)
+
+                        await msg.channel.edit(overwrites=category.overwrites)
 
                     return
                 
         attach = msg.attachments[0]
         if attach.size >= 8000000:
             await file_too_large_prompt()
-            
-            # Ended task early, clean up
-            self.upscale_image_tasks.pop(0)
-            return
+            return finish()
 
         conf = await msg.channel.send(
             embed=Embed(
@@ -178,9 +185,7 @@ class Events(Cog):
                         description=f"❌ That image is too small! Please use [Google Images](https://images.google.com/) or [SauceNAO](https://saucenao.com) to check for a larger resolution."
                     ), delete_after=5)
 
-                # Ended task early, clean up
-                self.upscale_image_tasks.pop(0)
-                return
+                return finish()
                     
             # If smaller dimension is greater than 1000px, skip upscaling
             if ((width > height and height > 1000) or \
@@ -214,17 +219,6 @@ class Events(Cog):
                         )
 
                         r.json = await r.json()
-
-                    """
-                    # Upload image
-                    r = post(
-                        "https://api.deepai.org/api/waifu2x",
-                        files={'image': current_data},
-                        headers={'api-key': self.bot.auth["DeepAI_key"]}
-                    )
-
-                    r.json = r.json()
-                    """
                             
                     try:
                         result = udownload(r.json["output_url"])
@@ -235,15 +229,19 @@ class Events(Cog):
                         await conf.edit(
                             embed=Embed(
                                 color=0xff0000,
-                                description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
+                                description=f"❌ Upscale failed! Please choose a different image, or try [Google Images](https://images.google.com/) or [SauceNAO](https://saucenao.com) to check for a larger resolution.\n"
                                             f"`{r.json['err']}`"
                             ), delete_after=5)
 
-                        await msg.channel.edit(overwrites=msg.channel.category.overwrites)
-                        
-                        # Ended task early, clean up
-                        self.upscale_image_tasks.pop(0)
-                        return
+                        if msg.channel.id != 777189629505699850:
+                            if msg.channel.is_nsfw():
+                                category = await self.bot.fetch_channel(740663386500628570)
+                            else:
+                                category = await self.bot.fetch_channel(897696876319625286)
+
+                            await msg.channel.edit(overwrites=category.overwrites)
+
+                        return finish()
                             
                     else:
                         # Open returned image and check results
@@ -274,10 +272,8 @@ class Events(Cog):
                             description=f"❌ Upscale failed! Please choose a different image or try google images for a larger resolution.\n"
                                         f"Error details: `Retries exhausted. Will not continue.`"
                         ), delete_after=5)
-                            
-                    # Ended task early, clean up
-                    self.upscale_image_tasks.pop(0)
-                    return
+                    
+                    return finish()
 
                 # Upscaled image is final and ready to send
                 attachment_file = File(result[0], filename=f"{msg.id}.png")
@@ -287,14 +283,18 @@ class Events(Cog):
             await msg.channel.fetch_message(msg.id)
         except NotFound:
             if msg.channel.id != 777189629505699850:
-                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                if msg.channel.is_nsfw():
+                    category = await self.bot.fetch_channel(740663386500628570)
+                else:
+                    category = await self.bot.fetch_channel(897696876319625286)
+
+                await msg.channel.edit(overwrites=category.overwrites)
 
             await conf.edit( 
                 embed=Embed(
                     description="❌ Operation cancelled."
             ), delete_after=2)
 
-                
         else:
             buffer_target = self.bot.get_channel(789198608175202394)
             buffer_msg = await buffer_target.send(file=attachment_file)
@@ -312,12 +312,14 @@ class Events(Cog):
             await conf.add_reaction("⬆")
                 
             if msg.channel.id != 777189629505699850:
-                await msg.channel.edit(overwrites=msg.channel.category.overwrites)
+                if msg.channel.is_nsfw():
+                    category = await self.bot.fetch_channel(740663386500628570)
+                else:
+                    category = await self.bot.fetch_channel(897696876319625286)
 
+                await msg.channel.edit(overwrites=category.overwrites)
 
-        # Ended task, clean up
-        self.upscale_image_tasks.pop(0)
-        return
+        return finish()
 
     async def confirm_pfp(self, member):
         user = await self.bot.fetch_user(member.id)
@@ -474,6 +476,15 @@ class Events(Cog):
                             description="While you can attach as many images you want here, please only send a link to one at a time.",
                         ), delete_after=5)
 
+                        await msg.channel.set_permissions(msg.author, send_messages=False)
+                        await sleep(5)
+                        if msg.channel.is_nsfw():
+                            category = await self.bot.fetch_channel(740663386500628570)
+                        else:
+                            category = await self.bot.fetch_channel(897696876319625286)
+
+                        await msg.channel.edit(overwrites=category.overwrites)
+
                     elif len(find_url) == 1:
                         await msg.delete()
                         if not find_url[0].endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
@@ -482,13 +493,32 @@ class Events(Cog):
                                 title="Extension Not Allowed",
                                 description="URLs must end in any of the following: [.jpg, .jpeg, .png, .gif, .mp4]",
                             ), delete_after=5)
+
+                        await msg.channel.set_permissions(msg.author, send_messages=False)
+                        await sleep(5)
+                        if msg.channel.is_nsfw():
+                            category = await self.bot.fetch_channel(740663386500628570)
+                        else:
+                            category = await self.bot.fetch_channel(897696876319625286)
+
+                        await msg.channel.edit(overwrites=category.overwrites)
+
                 else:
                     await msg.delete()
                     await msg.channel.send(content=msg.author.mention, embed=Embed(
                         title="Images only",
-                        description="You can only upload images in this channel.\n"
+                        description="You can only upload images or image URLS in this channel.\n"
                                     "You can comment on images by sending its **message** URL in <#742571100009136148>"
                         ), delete_after=5)
+
+                    await msg.channel.set_permissions(msg.author, send_messages=False)
+                    await sleep(5)
+                    if msg.channel.is_nsfw():
+                        category = await self.bot.fetch_channel(740663386500628570)
+                    else:
+                        category = await self.bot.fetch_channel(897696876319625286)
+
+                    await msg.channel.edit(overwrites=category.overwrites)
             
             else:
                 for i in msg.attachments:
@@ -498,6 +528,16 @@ class Events(Cog):
                             title="Extension Not Allowed",
                             description="Your file names must end in any of the following: [.jpg, .jpeg, .png, .gif, .mp4]",
                         ), delete_after=5)
+
+                    await msg.channel.set_permissions(msg.author, send_messages=False)
+                    await sleep(5)
+                    if msg.channel.is_nsfw():
+                        category = await self.bot.fetch_channel(740663386500628570)
+                    else:
+                        category = await self.bot.fetch_channel(897696876319625286)
+
+                    await msg.channel.edit(overwrites=category.overwrites)
+                    break
             
             return
 
@@ -518,7 +558,15 @@ class Events(Cog):
                     description="You can only upload images in this channel.\n"
                                 "You can comment on images by sending its **message** URL in <#742571100009136148>"
                     ), delete_after=5)
-                
+
+                await msg.channel.set_permissions(msg.author, send_messages=False)
+                await sleep(5)
+                if msg.channel.is_nsfw():
+                    category = await self.bot.fetch_channel(740663386500628570)
+                else:
+                    category = await self.bot.fetch_channel(897696876319625286)
+
+                await msg.channel.edit(overwrites=category.overwrites)
                 return
 
             if len(msg.attachments) > 1:
@@ -531,6 +579,22 @@ class Events(Cog):
                         color=0x32d17f),
                     delete_after=5)
             
+            if not str(msg.attachments[0].url).endswith((".jpg", ".jpeg", ".png", ".gif")):
+                await msg.delete()
+                await msg.channel.send(content=msg.author.mention, embed=Embed(
+                    title="Extension Not Allowed",
+                    description="Your file names must end in any of the following: [.jpg, .jpeg, .png, .gif]",
+                ), delete_after=5)
+                
+                await msg.channel.set_permissions(msg.author, send_messages=False)
+                await sleep(5)
+                if msg.channel.is_nsfw():
+                    category = await self.bot.fetch_channel(740663386500628570)
+                else:
+                    category = await self.bot.fetch_channel(897696876319625286)
+
+                await msg.channel.edit(overwrites=category.overwrites)
+
             else:
                 if self.upscale_image_tasks:
                     await msg.add_reaction(self.bot.get_emoji(813237675553062954))
