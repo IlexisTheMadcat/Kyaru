@@ -43,7 +43,7 @@ class BackgroundTasks(Cog):
 
         await self.bot.change_presence(status=status, activity=activity)
 
-    @loop(seconds=57.5)
+    @loop(seconds=297.5)
     async def save_data(self):
         # If the repl is exited while saving, data may be corrupted or reset.
         print("[NHK: ... Saving, do not quit...", end="\r")
