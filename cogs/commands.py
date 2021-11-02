@@ -39,11 +39,13 @@ class Commands(Cog):
             await ctx.send(embed=Embed(
                 title=f"{user}'s Avatar",
             ).set_image(url=user.avatar_url))
+            # ).set_image(url=user.avatar.url))
             
         if not userID:
             await ctx.send(embed=Embed(
                 title="Your Avatar",
             ).set_image(url=ctx.author.avatar_url))
+            # ).set_image(url=user.avatar.url))
     
     @command(aliases=["auto_emb"])
     @bot_has_permissions(send_messages=True)
@@ -409,6 +411,48 @@ class Commands(Cog):
                         f"Reason: {reason}")
 
                     return
+
+    @command(aliases=["boost", "gbr"])
+    @has_permissions(administrator=True)
+    async def grant_boost_reward(self, ctx, uid: int):
+        member = ctx.guild.get_member(uid)
+        if not member: 
+            await ctx.send("I couldn't find a member with that ID.")
+            return
+
+        if self.bot.user_data["UserData"][str(member.id)]["has_boosted"]:
+            conf = await ctx.send("That member already got their reward. Continue anyway?\n(`y` to accept, anything else to ignore)")
+            
+            try:
+                m = await self.bot.wait_for("message", timeout=15, 
+                    check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id)
+            except TimeoutError:
+                await conf.edit("That member already got their reward. Continue anyway? (Timed out)")
+                return
+            else:
+                await m.delete()
+                await conf.delete()
+                await ctx.message.delete()
+
+                if m.content not in ["Y", "y"]:
+                    return
+
+        await ctx.message.delete()
+        await ctx.send(
+            content=member.mention,
+            embed=Embed(
+                title="Thanks For Boosting!",
+                description="Nitro boosters gain a small experience boost that lasts as long as they're a booster. "
+                            "Thanks for your patronage! Here's 💳`5000` Spending EXP and a free PREMIUM headpat!",
+            color=0xff73fa
+        ).set_image(
+            url="https://i.giphy.com/l3vRd6owAhtbFIb16.gif"
+        ))
+
+        self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"] += 5000
+        self.bot.user_data["UserData"][str(member.id)]["has_boosted"] = True
+
+        return
     
     # EVENT related commands.
     # Code that is related to an event is commented with "EVENT".
@@ -417,26 +461,22 @@ class Commands(Cog):
         rankings_part = []
         bucket = []
         for userID in self.bot.user_data["UserData"]:
-            if userID == "authorID": continue  # Skip default value
+            if userID == "UID": continue  # Skip default value
 
             user = self.bot.get_user(int(userID))
-            if user is None: user = await self.bot.fetch_user(int(userID))
+            if user is None: 
+                try: user = await self.bot.fetch_user(int(userID))
+                except NotFound or ValueError: continue
 
             try:
-                if self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]:
-                    rankings_part.append(f'{self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]} points: {user.mention}')
-                    bucket = bucket + [user.id]*self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]
+                if self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]:
+                    rankings_part.append(f'{self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]} points: {user.mention}')
             except KeyError:
                 continue
         
         if not rankings_part:
             rankings_part = ["No results to show yet."]
-        
-        if select.lower() == "select": #and not self.bot.config["event_ongoing"]:
-            selected = self.bot.get_user(choice(bucket))
-            await ctx.send(content=f"The selected member is: {selected.mention}")
-            return
-                
+
         await ctx.send(embed=Embed(
             title="Current Event Leaderboard" if self.bot.config["event_ongoing"] else "Last Event Leaderboard",
             description="\n".join(rankings_part)))
@@ -455,23 +495,19 @@ class Commands(Cog):
             await ctx.send("`value` and `UID` must be numbers.")
             if UID.lower() != "all":
                 return
+
             else:  
                 # Change all participants' scores
                 for userID in self.bot.user_data["GlobalEventData"]["participants"]:
-                    if userID == "authorID": continue  # Skip default value
+                    if userID == "UID": continue  # Skip default value
 
                     user = self.bot.get_user(int(userID))
-                    if user is None: user = await self.bot.fetch_user(int(userID))
-                    
-                    if not str(user.id) in self.bot.user_data["UserData"]:
-                        self.bot.user_data["UserData"][str(user.id)] = {}
-                    if not "EventData" in self.bot.user_data["UserData"][str(user.id)]:
-                        self.bot.user_data["UserData"][str(user.id)]["EventData"] = {}
-                    if not "points" in self.bot.user_data["UserData"][str(user.id)]["EventData"]:
-                        self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = 0
+                    if user is None: 
+                        try: user = await self.bot.fetch_user(int(userID))
+                        except NotFound or ValueError: continue
 
                     if mode == "set":
-                        self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = value
+                        self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = value
                         await ctx.send(f"All participants now have `{value}` points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
@@ -481,8 +517,8 @@ class Commands(Cog):
                                         f'ー Reason for change: {reason}'))
 
                     elif mode == "add":
-                        self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = \
-                            self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] + value
+                        self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = \
+                            self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] + value
                         await ctx.send(f"All participants have gained {value} points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
@@ -492,8 +528,8 @@ class Commands(Cog):
                                         f'ー Reason for change: {reason}'))
                     
                     elif mode == "remove":
-                        self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = \
-                            self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] - value
+                        self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]= \
+                            self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] - value
                         await ctx.send(f"All participants have lost {value} points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
@@ -511,15 +547,8 @@ class Commands(Cog):
             return
         
         if mode == "set":
-            if not str(user.id) in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"][str(user.id)] = {}
-            if not "EventData" in self.bot.user_data["UserData"][str(user.id)]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"] = {}
-            if not "points" in self.bot.user_data["UserData"][str(user.id)]["EventData"]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = 0
-
-            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"])
-            self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = value
+            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"])
+            self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = value
 
             await ctx.send(f"{user} now has `{value}` points. (Original value: `{original}` -> `{value}`)")
             
@@ -530,25 +559,18 @@ class Commands(Cog):
                             f'ー Reason for change: {reason}'))
 
         elif mode == "add":
-            if not str(user.id) in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"][str(user.id)] = {}
-            if not "EventData" in self.bot.user_data["UserData"][str(user.id)]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"] = {}
-            if not "points" in self.bot.user_data["UserData"][str(user.id)]["EventData"]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = 0
-
-            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"])
-            self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = \
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] + value
+            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"])
+            self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = \
+                self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] + value
             
-            points = self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]
+            points = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
             await ctx.send(f"{user} now has `{points}` points. (Original value: `{original}` plus `{value}`)")
 
             log_channel = await self.bot.fetch_channel(829564482833481778)
             await log_channel.send(content=user.mention, embed=Embed(
                 color=0x00ff00,
                 description=f'{user} gained {value} points. '
-                            f'They now have {self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]} in total.\n'
+                            f'They now have {self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]} in total.\n'
                             f'ー Reason for change: {reason}'))
         
         elif mode == "remove":
@@ -557,20 +579,20 @@ class Commands(Cog):
             if not "EventData" in self.bot.user_data["UserData"][str(user.id)]:
                 self.bot.user_data["UserData"][str(user.id)]["EventData"] = {}
             if not "points" in self.bot.user_data["UserData"][str(user.id)]["EventData"]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = 0
+                self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = 0
 
-            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"])
-            self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = \
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] - value
+            original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"])
+            self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = \
+                self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] - value
             
-            points = self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]
+            points = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
             await ctx.send(f"{user} now has `{points}` points. (Original value: `{original}` minus `{value}`)")
 
             log_channel = await self.bot.fetch_channel(829564482833481778)
             await log_channel.send(content=user.mention, embed=Embed(
                 color=0xff0000,
                 description=f'{user} lost {value} points. '
-                            f'They now have {self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]} in total.\n'
+                            f'They now have {self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]} in total.\n'
                             f'ー Reason for change: {reason}'))
 
         elif mode == "view":
@@ -579,9 +601,9 @@ class Commands(Cog):
             if not "EventData" in self.bot.user_data["UserData"][str(user.id)]:
                 self.bot.user_data["UserData"][str(user.id)]["EventData"] = {}
             if not "points" in self.bot.user_data["UserData"][str(user.id)]["EventData"]:
-                self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"] = 0
+                self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = 0
 
-            value = self.bot.user_data["UserData"][str(user.id)]["EventData"]["points"]
+            value = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
 
             await ctx.send(f"{user} has `{value}` points.")
 

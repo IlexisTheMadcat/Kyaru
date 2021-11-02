@@ -14,7 +14,7 @@ from urllib.request import urlretrieve as udownload
 import aiohttp
 from PIL import Image
 from expiringdict import ExpiringDict
-from discord import File, Member, Message, utils
+from discord import File, Member, Message, MessageType, utils
 from discord.errors import Forbidden, NotFound, HTTPException
 from discord.ext.commands.cog import Cog
 from discord.ext.commands.context import Context
@@ -451,6 +451,24 @@ class Events(Cog):
         # Cooldown
         if msg.author.id in self.bot.global_cooldown: return
         else: self.bot.global_cooldown.update({msg.author.id:"placeholder"})
+
+        if msg.type == MessageType.premium_guild_subscription:
+            if not self.bot.user_data["UserData"][str(msg.author.id)]["has_boosted"]:
+                await msg.send(
+                    content=msg.author.mention,
+                    embed=Embed(
+                        title="Thanks For Boosting!",
+                        description="Nitro boosters gain a small experience boost that lasts as long as they're a booster. "
+                                    "Thanks for your patronage! Here's 💳`5000` Spending EXP and a free PREMIUM headpat!",
+                    color=0xff73fa
+                ).set_image(
+                    url="https://i.giphy.com/l3vRd6owAhtbFIb16.gif"
+                ))
+
+                self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"] += 5000
+                self.bot.user_data["UserData"][str(msg.author.id)]["has_boosted"] = True
+
+                return
         
         # Don't respond to bots.
         if msg.author.bot and not msg.author.id == 801805025424179230:
@@ -732,6 +750,10 @@ class Events(Cog):
         if user == self.bot.user:
             return
 
+        if (user.id == message.author.id or str(user.id) in message.embeds[0].description) and msg.author.id == 742517626785497168:
+            await message.delete()
+            return
+
         if message.channel.category and \
             message.channel.category.id in \
             [740663386500628570, 740663474568560671]:
@@ -749,20 +771,14 @@ class Events(Cog):
                         delete_after=5)
 
             if str(payload.emoji) == "❌":
-                if (user.id == message.author.id or \
-                    str(user.id) in message.embeds[0].description):
-
-                    await message.delete()
-
-                else:
-                    await message.remove_reaction(payload.emoji, member)
-                    await message.channel.send(
-                        content=user.mention,
-                        embed=Embed(
-                            title="Not Yours", 
-                            description="You can't remove this post.",
-                            color=0x32d17f),
-                        delete_after=5)
+                await message.remove_reaction(payload.emoji, member)
+                await message.channel.send(
+                    content=user.mention,
+                    embed=Embed(
+                        title="Not Yours", 
+                        description="You can't remove this post.",
+                        color=0x32d17f),
+                    delete_after=5)
 
             if str(payload.emoji) == "🔀":
                 bot_spam = self.bot.get_channel(742481946030112779)
@@ -877,6 +893,63 @@ class Events(Cog):
     @Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == 740662779106689055 and not member.bot:
+            suspected_raiders = [
+                889059743262453771, 
+                743733203528843334, 
+                889033903850016778, 
+                889068106603958272, 
+                889068365593866270, 
+                889071295617196103, 
+                888490183715082330, 
+                889029844845883464, 
+                889057053866344448, 
+                889098995899711488, 
+                889033903850016778, 
+                889051656539471882, 
+                889052606025052210, 
+                889052325900075019, 
+                889053167394889730, 
+                889053378720694363, 
+                889054949034586114, 
+                889057250776326175, 
+                889061126279688202, 
+                88906185168875114, 
+                889063454118395915, 
+                889064836451938344, 
+                889065998500646923, 
+                889065326430519337, 
+                889066400751181884, 
+                889066568376520746, 
+                889068106603958272, 
+                889068106603958272, 
+                889034043268661258, 
+                889028476567433226, 
+                88902871066830442, 
+                889029844845883464, 
+                889105026931363840, 
+                889096426330685482, 
+                889104454513721414, 
+                889105798213546034, 
+                889106072474878012, 
+                889107495279292436, 
+                889105231567265863, 
+                889106331225686099, 
+                889102761868804146, 
+                889107278307938404
+            ]
+            if member.id in suspected_raiders:
+                self.just_joined[0].update({member.id: "placeholder"})
+                await member.send(embed=Embed(
+                    color=0xFFBF00,
+                    title="Ban Notice",
+                    description="🚨⛔ We've gotten reports that a large group of raiders have been detected in another neko-related server. "
+                                "Your user ID falls under this group of raiders. Due to this, you cannot be permitted to enter into Neko Heaven.\n"
+                                "If you believe this was in error, please join the [ban appeals server](https://discord.gg/3RYGFrbsuJ)."
+                ))
+                await member.ban()
+                self.just_joined[0].pop(member.id)
+                return
+
             guild = self.bot.get_guild(740662779106689055)
             # Scan for NSFW
             if not await self.confirm_pfp(member):

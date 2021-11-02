@@ -45,19 +45,18 @@ DATA_DEFAULTS = {
                 # A notification sent to users when they use a command for the first time.
                 # These are set to true after being executed. Resets by command.
             },
-
-            "EventData": {
-                "points": 0,
-            },
             "Gallery": {
                 "channelID": []
             },  # {str(channelID):[imageURL]}
             "Leveling": {
                 "personal_modifier": 1.00,
+                "inventory": [0],
                 "Cumulative EXP": 0,
                 "Spending EXP": 0,
-                "inventory": [0]
+                "Event EXP": 0
             },
+
+            "has_boosted": False
 
         }
     },
