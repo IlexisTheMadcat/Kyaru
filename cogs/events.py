@@ -750,7 +750,7 @@ class Events(Cog):
         if user == self.bot.user:
             return
 
-        if (user.id == message.author.id or str(user.id) in message.embeds[0].description) and msg.author.id == 742517626785497168:
+        if (user.id == message.author.id or (message.embeds and str(user.id) in message.embeds[0].description)) and message.author.id == 742517626785497168:
             await message.delete()
             return
 
