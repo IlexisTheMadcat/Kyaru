@@ -559,6 +559,47 @@ class Events(Cog):
             
             return
 
+        # Upload videos only in these channels
+        if msg.guild and msg.channel.id in \
+            [906587188718866474]:
+            if not msg.attachments:
+                await msg.delete()
+                await msg.channel.send(content=msg.author.mention, embed=Embed(
+                    title="Videos only",
+                    description="You can only upload videos in this channel.\n"
+                                "You can comment on videos by sending its **message** URL in <#742571100009136148>"
+                    ), delete_after=5)
+
+                await msg.channel.set_permissions(msg.author, send_messages=False)
+                await sleep(5)
+                if msg.channel.is_nsfw():
+                    category = await self.bot.fetch_channel(740663386500628570)
+                else:
+                    category = await self.bot.fetch_channel(897696876319625286)
+
+                await msg.channel.edit(overwrites=category.overwrites)
+            
+            else:
+                for i in msg.attachments:
+                    if not str(i.url).endswith((".mp4", ".mov", ".webm")):
+                        await msg.delete()
+                        await msg.channel.send(content=msg.author.mention, embed=Embed(
+                            title="Extension Not Allowed",
+                            description="Your file names must end in any of the following: [.mp4, .mov, .webm]",
+                        ), delete_after=5)
+
+                    await msg.channel.set_permissions(msg.author, send_messages=False)
+                    await sleep(5)
+                    if msg.channel.is_nsfw():
+                        category = await self.bot.fetch_channel(740663386500628570)
+                    else:
+                        category = await self.bot.fetch_channel(897696876319625286)
+
+                    await msg.channel.edit(overwrites=category.overwrites)
+                    break
+            
+            return
+
         # Upscale media uploads in these categories
         if msg.guild and msg.channel.category and msg.channel.category.id == 740663474568560671 and \
             msg.channel.id not in [
