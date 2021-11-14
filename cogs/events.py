@@ -471,7 +471,11 @@ class Events(Cog):
                 return
         
         # Don't respond to bots.
-        if msg.author.bot and not msg.author.id == 801805025424179230:
+        if msg.author.bot and not msg.author.id == 742517626785497168:
+            category = self.bot.get_channel(740663474568560671)
+            if msg.channel.id in [channel.id for channel in category.channels]:
+                await msg.delete()
+
             return
 
         # For this bot, user data is generated on member join.
@@ -1030,6 +1034,17 @@ class Events(Cog):
 
             if str(member.id) not in self.bot.user_data["UserData"]:
                 self.bot.user_data["UserData"][str(member.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
+
+            if 829504771073114154 not in [role.id for role in member.roles]:
+                await member.add_roles(
+                    ctx.guild.get_role(829504771073114154),
+                    ctx.guild.get_role(909302321224253460),
+                    ctx.guild.get_role(909301337689296948),
+                    ctx.guild.get_role(769008950611804190),
+                    ctx.guild.get_role(909300699412709416),
+                    ctx.guild.get_role(909300758351069244),
+                    ctx.guild.get_role(909300823383752734),
+                    ctx.guild.get_role(909301283310161950))
 
         elif member.guild.id == 740662779106689055 and member.bot:
             general = self.bot.get_channel(741381152543211550)
