@@ -1037,14 +1037,14 @@ class Events(Cog):
 
             if 829504771073114154 not in [role.id for role in member.roles]:
                 await member.add_roles(
-                    ctx.guild.get_role(829504771073114154),
-                    ctx.guild.get_role(909302321224253460),
-                    ctx.guild.get_role(909301337689296948),
-                    ctx.guild.get_role(769008950611804190),
-                    ctx.guild.get_role(909300699412709416),
-                    ctx.guild.get_role(909300758351069244),
-                    ctx.guild.get_role(909300823383752734),
-                    ctx.guild.get_role(909301283310161950))
+                    member.guild.get_role(829504771073114154),
+                    member.guild.get_role(909302321224253460),
+                    member.guild.get_role(909301337689296948),
+                    member.guild.get_role(769008950611804190),
+                    member.guild.get_role(909300699412709416),
+                    member.guild.get_role(909300758351069244),
+                    member.guild.get_role(909300823383752734),
+                    member.guild.get_role(909301283310161950))
 
         elif member.guild.id == 740662779106689055 and member.bot:
             general = self.bot.get_channel(741381152543211550)
