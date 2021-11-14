@@ -6,6 +6,7 @@ from discord.activity import Activity
 from discord.enums import ActivityType, Status
 from discord.ext.commands.cog import Cog
 from discord.ext.tasks import loop
+from discord.errors import NotFound
 from discord_components import Button
 
 from utils.classes import Embed
@@ -56,7 +57,7 @@ class BackgroundTasks(Cog):
         self.bot.inactive = self.bot.inactive + 1
         print(f"[NHK: {time}] Running.")
    
-    @loop(hours=5)
+    @loop(hours=3)
     async def disboard_reminder(self):
         bot_spam = await self.bot.fetch_channel(740671751293501592)
         await bot_spam.send(embed=Embed(
@@ -76,7 +77,9 @@ class BackgroundTasks(Cog):
             except NotFound: self.library_cycle.cancel()
 
         try: message = await library.fetch_message(892947918879862875)
-        except NotFound: self.library_cycle.cancel()
+        except NotFound: 
+            await sleep(5)
+            return
 
         with open("Files/library_cycles.json", "r") as f:
             library_cycle_entries = load(f)["books"]
