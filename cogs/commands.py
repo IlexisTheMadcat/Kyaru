@@ -25,6 +25,32 @@ class Commands(Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @is_owner()
+    @command()
+    async def give_divider_roles(self, ctx):
+        """Give everyone role dividers. Should be an automatic process for people joining."""
+        edit = await ctx.send("<a:loading:813237675553062954> Giving everyone role dividers. This will take awhile.")
+        for member in ctx.guild.members:
+            if 829504771073114154 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(829504771073114154))
+            if 909302321224253460 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909302321224253460))
+            if 909301337689296948 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909301337689296948))
+            if 769008950611804190 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(769008950611804190))
+            if 909300699412709416 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909300699412709416))
+            if 909300758351069244 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909300758351069244))
+            if 909300823383752734 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909300823383752734))
+            if 909301283310161950 not in [role.id for role in member.roles]:
+                await member.add_roles(ctx.guild.get_role(909301283310161950))
+
+        await ctx.send(ctx.author.mention, delete_after=5)
+        await edit.edit(content="✅ Finished.")
+
     @command(aliases=["av"])
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def avatar(self, ctx: Context, userID=None):
