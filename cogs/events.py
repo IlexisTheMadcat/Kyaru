@@ -471,12 +471,14 @@ class Events(Cog):
                 return
         
         # Don't respond to bots.
-        if msg.author.bot and not msg.author.id == 742517626785497168:
-            category = self.bot.get_channel(740663474568560671)
-            if msg.channel.id in [channel.id for channel in category.channels]:
-                await msg.delete()
+        if msg.author.bot:
+            if msg.author.id != 742517626785497168:
+                category = self.bot.get_channel(740663474568560671)
+                if msg.channel.id in [channel.id for channel in category.channels]:
+                    await msg.delete()
 
-            return
+            else:
+                return
 
         # For this bot, user data is generated on member join.
         # Checks if the message is any attempted command.
@@ -795,7 +797,10 @@ class Events(Cog):
         if user == self.bot.user:
             return
 
-        if (user.id == message.author.id or (message.embeds and str(user.id) in message.embeds[0].description)) and message.author.id == 742517626785497168:
+        if (user.id == message.author.id or \
+            (message.embeds and message.embeds != Embed.Empty and str(user.id) in message.embeds[0].footer)) and \
+            message.author.id == 742517626785497168 and \
+            str(payload.emoji) == "❌":
             await message.delete()
             return
 
@@ -1035,7 +1040,8 @@ class Events(Cog):
             if str(member.id) not in self.bot.user_data["UserData"]:
                 self.bot.user_data["UserData"][str(member.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
 
-            if 829504771073114154 not in [role.id for role in member.roles]:
+            await sleep(30)
+            try:
                 await member.add_roles(
                     member.guild.get_role(829504771073114154),
                     member.guild.get_role(909302321224253460),
@@ -1045,6 +1051,9 @@ class Events(Cog):
                     member.guild.get_role(909300758351069244),
                     member.guild.get_role(909300823383752734),
                     member.guild.get_role(909301283310161950))
+
+            except NotFound:
+                return
 
         elif member.guild.id == 740662779106689055 and member.bot:
             general = self.bot.get_channel(741381152543211550)
