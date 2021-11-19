@@ -798,7 +798,7 @@ class Events(Cog):
             return
 
         if (user.id == message.author.id or \
-            (message.embeds and message.embeds[0].footer != Embed.Empty and str(user.id) in message.embeds[0].footer.text)) and \
+            (message.embeds and message.embeds[0].footer.text != Embed.Empty and str(user.id) in message.embeds[0].footer.text)) and \
             message.author.id == 742517626785497168 and \
             str(payload.emoji) == "❌":
             await message.delete()
