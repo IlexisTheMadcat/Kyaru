@@ -46,16 +46,20 @@ class BackgroundTasks(Cog):
 
     @loop(seconds=297.5)
     async def save_data(self):
-        # If the repl is exited while saving, data may be corrupted or reset.
-        print("[NHK: ... Saving, do not quit...", end="\r")
+        print("[HRB: ... Saving, do not quit...", end="\r")
         await sleep(2)
-        print("[NHK: !!! Saving, do not quit...", end="\r")
-        time = datetime.now().strftime("%H:%M, %m/%d/%Y")
+        print("[HRB: !!! Saving, do not quit...", end="\r")
 
-        self.bot.database.update(self.bot.user_data)
+        if self.bot.use_firebase:
+            self.bot.database.update(self.bot.user_data)
+
+        else:
+            with open("Files/user_data.json", "w") as f:
+                user_data = dump(self.bot.user_data, f)
 
         self.bot.inactive = self.bot.inactive + 1
-        print(f"[NHK: {time}] Running.")
+        time = datetime.now().strftime("%H:%M, %m/%d/%Y")
+        print(f"[NKH: {time}] Running.")
    
     @loop(hours=3)
     async def disboard_reminder(self):
@@ -73,12 +77,15 @@ class BackgroundTasks(Cog):
     async def library_cycle(self):
         library = self.bot.get_channel(892851304920125460)
         if not library: 
-            try: library = await self.bot.fetch_channel(892851304920125460)
-            except NotFound: self.library_cycle.cancel()
+            try: 
+                library = await self.bot.fetch_channel(892851304920125460)
+            except NotFound: 
+                self.library_cycle.cancel()
 
-        try: message = await library.fetch_message(892947918879862875)
+        try: 
+            message = await library.fetch_message(892947918879862875)
         except NotFound: 
-            await sleep(5)
+            await sleep(10)
             return
 
         with open("Files/library_cycles.json", "r") as f:
