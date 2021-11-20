@@ -522,6 +522,9 @@ class Commands(Cog):
             if UID.lower() != "all":
                 return
 
+                if full_event_exp%1 == 0: full_event_exp = int(full_event_exp)
+                else: full_event_exp = round(full_event_exp, 1)
+
             else:  
                 # Change all participants' scores
                 for userID in self.bot.user_data["GlobalEventData"]["participants"]:
@@ -534,34 +537,34 @@ class Commands(Cog):
 
                     if mode == "set":
                         self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = value
-                        await ctx.send(f"All participants now have `{value}` points.")
+                        await ctx.send(f"All participants now have `{round(value, 1)}` points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
                         await log_channel.send(content=user.mention, embed=Embed(
                             color=0x0000ff,
-                            description=f'All participants now have {value} points in total.\n'
+                            description=f'All participants now have {round(value, 1)} points in total.\n'
                                         f'ー Reason for change: {reason}'))
 
                     elif mode == "add":
                         self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = \
                             self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] + value
-                        await ctx.send(f"All participants have gained {value} points.")
+                        await ctx.send(f"All participants have gained {round(value, 1)} points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
                         await log_channel.send(content=user.mention, embed=Embed(
                             color=0x0000ff,
-                            description=f'All participants have gained {value} points.\n'
+                            description=f'All participants have gained {round(value, 1)} points.\n'
                                         f'ー Reason for change: {reason}'))
                     
                     elif mode == "remove":
                         self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]= \
                             self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] - value
-                        await ctx.send(f"All participants have lost {value} points.")
+                        await ctx.send(f"All participants have lost {round(value, 1)} points.")
                 
                         log_channel = await self.bot.fetch_channel(829564482833481778)
                         await log_channel.send(content=user.mention, embed=Embed(
                             color=0x0000ff,
-                            description=f'All participants have lost {value} points.\n'
+                            description=f'All participants have lost {round(value, 1)} points.\n'
                                         f'ー Reason for change: {reason}'))
                 return
         
@@ -576,12 +579,12 @@ class Commands(Cog):
             original = deepcopy(self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"])
             self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] = value
 
-            await ctx.send(f"{user} now has `{value}` points. (Original value: `{original}` -> `{value}`)")
+            await ctx.send(f"{user} now has `{round(value, 1)}` points. (Original value: `{round(original, 1)}` -> `{round(value, 1)}`)")
             
             log_channel = await self.bot.fetch_channel(829564482833481778)
             await log_channel.send(content=user.mention, embed=Embed(
                 color=0x0000ff,
-                description=f'{user} now has {value} points in total.\n'
+                description=f'{user} now has {round(value, 1)} points in total.\n'
                             f'ー Reason for change: {reason}'))
 
         elif mode == "add":
@@ -590,12 +593,12 @@ class Commands(Cog):
                 self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] + value
             
             points = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
-            await ctx.send(f"{user} now has `{points}` points. (Original value: `{original}` plus `{value}`)")
+            await ctx.send(f"{user} now has `{points}` points. (Original value: `{round(original, 1)}` plus `{round(value, 1)}`)")
 
             log_channel = await self.bot.fetch_channel(829564482833481778)
             await log_channel.send(content=user.mention, embed=Embed(
                 color=0x00ff00,
-                description=f'{user} gained {value} points. '
+                description=f'{user} gained {round(value, 1)} points. '
                             f'They now have {self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]} in total.\n'
                             f'ー Reason for change: {reason}'))
         
@@ -612,12 +615,12 @@ class Commands(Cog):
                 self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"] - value
             
             points = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
-            await ctx.send(f"{user} now has `{points}` points. (Original value: `{original}` minus `{value}`)")
+            await ctx.send(f"{user} now has `{points}` points. (Original value: `{round(original, 1)}` minus `{round(value, 1)}`)")
 
             log_channel = await self.bot.fetch_channel(829564482833481778)
             await log_channel.send(content=user.mention, embed=Embed(
                 color=0xff0000,
-                description=f'{user} lost {value} points. '
+                description=f'{user} lost {round(value, 1)} points. '
                             f'They now have {self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]} in total.\n'
                             f'ー Reason for change: {reason}'))
 
@@ -631,7 +634,7 @@ class Commands(Cog):
 
             value = self.bot.user_data["UserData"][str(user.id)]["Leveling"]["Event EXP"]
 
-            await ctx.send(f"{user} has `{value}` points.")
+            await ctx.send(f"{user} has `{round(value, 1)}` points.")
 
 def setup(bot):
     bot.add_cog(Commands(bot))

@@ -37,10 +37,12 @@ class Leveling(Cog):
             "Cumulative EXP Booster +1.0x 20m": 2000,
             "Cumulative EXP Booster +2.0x 30m": 3500,
             "Temporary Mute 5m": 2500,
-            "Skip A Level": 7500
+            "Skip A Level": 10000
+        }
+        self.event_storefront = {
+            "Lottery Ticket": 1500
         }
 
-        # Channel meta
         self.rewards = {
             1:  851225537165918259,  # r@Interested
             3:  851236641531363338,  # r@Media Perms
@@ -75,7 +77,8 @@ class Leveling(Cog):
             "https://c.tenor.com/aEHAFGnKhZkAAAAC/pat-pats-head.gif",
             "https://c.tenor.com/edHuxNBD6IMAAAAC/anime-head-pat.gif"
         ]
-            
+         
+        # Channel meta
         self.ignored_channels = [
             740923481939509258,  # c#Staff Room
             740676328935653406,  # c#Bulletin
@@ -442,6 +445,7 @@ Turn the levelup message into a set of reactions.
         obtained_exp_to_next = total_exp_to_next - remaining_exp_to_next
         full_cumulative_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Cumulative EXP"])
         full_spending_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Spending EXP"])
+        full_event_exp = deepcopy(self.bot.user_data["UserData"][str(member.id)]["Leveling"]["Event EXP"])
 
         if remaining_exp_to_next%1 == 0: remaining_exp_to_next = int(remaining_exp_to_next)
         else: remaining_exp_to_next = round(remaining_exp_to_next, 1)
@@ -451,6 +455,8 @@ Turn the levelup message into a set of reactions.
         else: full_cumulative_exp = round(full_cumulative_exp, 1)
         if full_spending_exp%1 == 0: full_spending_exp = int(full_spending_exp)
         else: full_spending_exp = round(full_spending_exp, 1)
+        if full_event_exp%1 == 0: full_event_exp = int(full_event_exp)
+        else: full_event_exp = round(full_event_exp, 1)
 
         if member.id == ctx.author.id:
             await ctx.send(embed=Embed(
@@ -459,6 +465,7 @@ Turn the levelup message into a set of reactions.
                             f"You are {remaining_exp_to_next} EXP away from your next level.\n"
                             f"\n"
                             f"Current Spending EXP: 💳 {full_spending_exp}\n"
+                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] else ''}"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
         else:
@@ -468,6 +475,7 @@ Turn the levelup message into a set of reactions.
                             f"They are {remaining_exp_to_next} EXP away from their next level.\n"
                             f"\n"
                             f"Current Spending EXP: 💳 {full_spending_exp}\n"
+                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] else ''}"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
 
@@ -682,6 +690,9 @@ Turn the levelup message into a set of reactions.
     @Cog.listener()
     async def on_message(self, msg):
         if msg.channel.id == 870360906561904651:
+            if msg.author.bot:
+                return
+
             if msg.author.id == self.bot.user.id:
                 await sleep(5)
                 await msg.delete()
@@ -775,6 +786,8 @@ Turn the levelup message into a set of reactions.
             earnings = calculate_earnings()
             self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"] += earnings
             self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"] += earnings
+            if self.bot.config["event_ongoing"]:
+                self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Event EXP"] += earnings
 
             # Working copy of new cumulative exp
             cumulative_exp_copy = deepcopy(self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"])
