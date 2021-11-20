@@ -40,7 +40,7 @@ class Leveling(Cog):
             "Skip A Level": 10000
         }
         self.event_storefront = {
-            "Lottery Ticket": 1500
+            "Lottery Ticket": 2000
         }
 
         self.rewards = {
@@ -171,6 +171,25 @@ Turn the levelup message into a set of reactions.
         self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Spending EXP"] -= self.storefront[item_name]
         await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased `{item_name}`.\nIt has been added to your inventory."))
 
+    # EVENT
+    @command(name="eventpurchase")
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def purchase_event_shop_item(self, ctx, *, item_name):
+        shop_channel = self.bot.get_channel(870360906561904651)
+        
+        event_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Event EXP"])
+        if not item_name in self.event_storefront:
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item does not exist.\nNote: Item names are case sensitive."))
+            return
+
+        if event_exp_copy < self.storefront[item_name]:
+            await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="You do not have enough Event EXP to purchase that."))
+            return
+
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].append(item_name)
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Event EXP"] -= self.storefront[item_name]
+        await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased `{item_name}`.\nIt has been added to your inventory."))
+
     @command(name="use")
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def use_shop_item(self, ctx, *, item_name):
@@ -178,7 +197,7 @@ Turn the levelup message into a set of reactions.
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is not in your inventory.\nNote: Item names are case sensitive."))
             return
 
-        if item_name in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"] and item_name not in self.storefront:
+        if item_name in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"] and item_name not in self.storefront+self.event_storefront:
             self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is depreciated and has been removed from your inventory."))
             return
@@ -411,6 +430,9 @@ Turn the levelup message into a set of reactions.
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                 ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
                 ).set_image(url=choice(self.level_up_gifs)))
+
+        elif item_name == "Lottery Ticket": # EVENT
+            pass
 
         else:
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="That item doesn't have a use yet."))
@@ -856,7 +878,7 @@ Turn the levelup message into a set of reactions.
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
                                         f"*Tip: You can hide this message in the future by going to <#740671751293501592> and typing `k!lp_levelup`.*"
-                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level. UID: {msg.author.id}"
                             ).set_image(url=choice(self.level_up_gifs)))
 
                         self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"] = True
@@ -868,7 +890,7 @@ Turn the levelup message into a set of reactions.
                                         f"\n"
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
-                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level."
+                            ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level. UID: {msg.author.id}"
                             ).set_image(url=choice(self.level_up_gifs)))
 
 
