@@ -91,19 +91,30 @@ INIT_EXTENSIONS = [
     # "web"
 ]
 
-if exists("Files/ServiceAccountKey.json"):
-    with open("Files/ServiceAccountKey.json", "r") as f:
-        key = load(f)
-else:  # If it doesn't exists assume running on replit
-    try:
-        from replit import db
-        key = dict(db["SAK"])
-    except Exception:
-        raise FileNotFoundError("Could not find ServiceAccountKey.json.")
+# 0 = use JSON
+# 1 = use Firebase
+DATA_CLOUD = 1
 
-db = FirebaseDB(
-    "https://kyaru-database-default-rtdb.firebaseio.com/", 
-    fp_accountkey_json=key)
+if DATA_CLOUD:
+    if exists("Files/ServiceAccountKey.json"):
+        key = load(open("Files/ServiceAccountKey.json", "r"))
+    else:  # If it doesn't exists assume running on replit
+        try:
+            from replit import db
+            key = dict(db["SAK"])
+        except Exception:
+            raise FileNotFoundError("Could not find ServiceAccountKey.json.")
+
+    db = FirebaseDB(
+        "https://kyaru-database-default-rtdb.firebaseio.com/", 
+        fp_accountkey_json=key)
+
+    user_data = db.copy()
+
+else:
+    with open("Files/user_data.json", "r") as f:
+        db = None
+        user_data = load(f)
 
 user_data = db.copy()
 # Check the database
@@ -134,7 +145,11 @@ for key in found_data:
               f"Removed key from file.")
 del found_data  # Remove variable from namespace
 
-db.update(user_data)
+if DATA_CLOUD:
+    db.update(user_data)
+else:
+    with open("Files/user_data.json", "w") as f:
+        dump(user_data, f)
 
 intents = Intents.default()
 intents.members = True
@@ -146,13 +161,14 @@ bot = Bot(
     status=Status.idle,
     activity=Activity(type=ActivityType.watching, name="myself struggle."),
     command_prefix="k!",
+    
     config=config_data,
     intents=intents,
-
     database=db,
     user_data=user_data,
     defaults=DATA_DEFAULTS,
-    auth=db["Tokens"]
+    auth=db["Tokens"],
+    use_firebase=DATA_CLOUD
 )
 
 # If a custom help command is created:
