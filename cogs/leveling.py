@@ -1,8 +1,7 @@
-# import os
 import re
+import random
 from asyncio import sleep
 from asyncio.exceptions import TimeoutError
-# from textwrap import shorten
 from contextlib import suppress
 from random import choice, randint
 from copy import deepcopy
@@ -14,6 +13,7 @@ from discord.ext.commands.core import has_permissions, bot_has_permissions, comm
 from discord.ext.tasks import loop
 from discord.utils import get
 
+from discord_components import Button
 from utils.classes import Embed
 
 newline = "\n"
@@ -40,7 +40,7 @@ class Leveling(Cog):
             "Skip A Level": 10000
         }
         self.event_storefront = {
-            "Lottery Ticket": 2000
+            "Lottery Ticket": 1250
         }
 
         self.rewards = {
@@ -93,8 +93,7 @@ class Leveling(Cog):
         ]
 
         self.no_cd_channels = [
-            740663474568560671,  # c#SFW Catgirls
-            740663386500628570   # c#NSFW Catgirls
+            740663474568560671,  # c#Nekos
         ]
 
         self.modifiers = {
@@ -103,9 +102,8 @@ class Leveling(Cog):
                 769386184895234078: 0.75,  # t#🐾high-tier-hideout
             },
             "categoryc": {
-                816671250025021450: 0.05,  # c#Robotics Club
-                740663474568560671: 0.20,  # c#SFW Catgirls
-                740663386500628570: 0.20,  # c#NSFW Catgirls
+                816671250025021450: 0.10,  # c#Robotics Club
+                740663474568560671: 0.30,  # c#Nekos
             },
             "role": {  # Role does not stack
                 748505664472612994: 1.05,  # r@⭐Neko Bookster!⭐
@@ -140,6 +138,9 @@ You can only gain CuEXP once every minute, so spamming is pointless and will res
 **__Spending EXP__**
 `SpEXP` is the currency of the server. It is accumulated at the same rate as CuEXP.
 You can spend SpEXP in the <#870360906561904651>.
+**__Event EXP__**
+`EvEXP` is earned at the same rate as CuEXP and SpEXP, but it is used to buy items from the event section of the shop.
+Event items can only be purchased when an event is going on currently.
 
 **__Commands:__**
 __`rank/level [user]`__
@@ -150,6 +151,14 @@ Return the top 10 ranked users in Neko Heaven.
 
 __`toggle_lowprofile_levelup/lp_levelup`__
 Turn the levelup message into a set of reactions.
+
+__`purchase <item>`__
+Purchase an `item` from the shop. 
+Note: Item names are case sensitive.
+
+__`use <item>`__
+Use an `item` from your inventory. 
+Note: Item names are case sensitive.
 """
             ))
 
@@ -172,9 +181,13 @@ Turn the levelup message into a set of reactions.
         await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased `{item_name}`.\nIt has been added to your inventory."))
 
     # EVENT
-    @command(name="eventpurchase")
+    @command(name="eventpurchase", aliases=["epurchase"])
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def purchase_event_shop_item(self, ctx, *, item_name):
+        if not self.bot.config["event_ongoing"]:
+            await ctx.send("There is no event ongoing right now, or the last event has ended.")
+            return
+
         shop_channel = self.bot.get_channel(870360906561904651)
         
         event_exp_copy = deepcopy(self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Event EXP"])
@@ -182,14 +195,14 @@ Turn the levelup message into a set of reactions.
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item does not exist.\nNote: Item names are case sensitive."))
             return
 
-        if event_exp_copy < self.storefront[item_name]:
+        if event_exp_copy < self.event_storefront[item_name]:
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="You do not have enough Event EXP to purchase that."))
             return
 
         self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].append(item_name)
-        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Event EXP"] -= self.storefront[item_name]
+        self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["Event EXP"] -= self.event_storefront[item_name]
         await ctx.send(content=ctx.author.mention, embed=Embed(description=f"Purchased `{item_name}`.\nIt has been added to your inventory."))
-
+     
     @command(name="use")
     @bot_has_permissions(send_messages=True, embed_links=True)
     async def use_shop_item(self, ctx, *, item_name):
@@ -197,7 +210,7 @@ Turn the levelup message into a set of reactions.
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is not in your inventory.\nNote: Item names are case sensitive."))
             return
 
-        if item_name in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"] and item_name not in self.storefront+self.event_storefront:
+        if item_name in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"] and item_name not in list(self.storefront.keys())+list(self.event_storefront.keys()):
             self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove(item_name)
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xff0000, description="That item is depreciated and has been removed from your inventory."))
             return
@@ -432,7 +445,85 @@ Turn the levelup message into a set of reactions.
                 ).set_image(url=choice(self.level_up_gifs)))
 
         elif item_name == "Lottery Ticket": # EVENT
-            pass
+            if self.bot.user_data["UserData"][str(ctx.author.id)]["EventData"]["has_claimed"]:
+                while "Lottery Ticket" in self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"]:
+                    self.bot.user_data["UserData"][str(ctx.author.id)]["Leveling"]["inventory"].remove("Lottery Ticket")
+
+                await ctx.send("You have already claimed from the event. All other lottery tickets have been removed.")
+                return
+
+            draw = random.randint(1, 30)  # 30, not 2!
+            if draw != 15:  # 15, not 1!
+                await ctx.send(
+                    embed=Embed(
+                        title="Aww rats!",
+                        description="Better luck next time!"
+                    ).set_footer(text="If it helps, there is a 1 in 50 chance you can get any reward!"))
+            else:
+                await ctx.send(
+                    embed=Embed(
+                        title="Congrats!",
+                        description="Check your DMs!"))
+
+                reward_number = random.randint(0, len(self.bot.config["lottery_items"])-1)
+                reward = self.bot.config["lottery_items"][reward_number]
+
+                edit = await ctx.author.send(
+                    embed=Embed(
+                        title="Kyaru Lottery! Rewards",
+                        description=f"What you will get:\n"
+                                    f"**{reward[0]}**\n"
+                                    f"\n"
+                                    f"If you wish to accept this reward and *__withdraw__* from the event, press **Accept**. Once accepted, you cannot go back.\n"
+                                    f"If you wish to reject the reward and acknowledge that *__you will not get the Event EXP back__*, press **Reject**. Rejections cannot be appealed.\n"
+                                    f"I will give you 2 minutes to decide before it is automatically __rejected__. You can check which rewards are still available in [#📰updates](https://discord.com/channels/740662779106689055/740693241833193502/912205363233837088)."
+                    ),
+                    components=[
+                        [Button(emoji="✅", style=1, id="accept", label="Accept this reward"),
+                        Button(emoji="❌", style=2, id="reject", label="Reject this reward")]
+                    ]
+                )
+
+                try:
+                    interaction = await self.bot.wait_for("button_click", timeout=120, 
+                        check=lambda i: i.user.id == ctx.author.id and i.channel.id == edit.channel.id)
+                
+                except TimeoutError:
+                    await edit.edit(
+                        embed=Embed(
+                            title="Kyaru Lottery! Rewards",
+                            description=f"What you didn't get:\n"
+                                        f"**{reward[0]}**\n"
+                                        f"\n"
+                                        f"**Rejected** due to timeout. Better luck nect time!"
+                        ).set_footer(text="Rejections cannot be appealed."), components=[])
+                
+                else:
+                    await interaction.respond(type=6)
+
+                    if interaction.component.id == "accept":
+                        await edit.edit(
+                            embed=Embed(
+                                title="Kyaru Lottery! Rewards",
+                                description=f"What you won:\n"
+                                            f"**{reward[0]}**\n"
+                                            f"\n"
+                                            f"**Accepted!** Here is your code and instructions:\n"
+                                            f"{reward[1]}"
+                            ), components=[])
+
+                        self.bot.user_data["UserData"][str(ctx.author.id)]["EventData"]["has_claimed"] = True
+                        self.bot.config["lottery_items"].pop(reward_number)
+
+                    elif interaction.component.id == "reject":
+                        await edit.edit(
+                            embed=Embed(
+                                title="Kyaru Lottery! Rewards",
+                                description=f"What you didn't get:\n"
+                                            f"**{reward[0]}**\n"
+                                            f"\n"
+                                            f"**Rejected.** Better luck next time!\n"
+                            ).set_footer(text="Rejections cannot be appealed."), components=[])
 
         else:
             await ctx.send(content=ctx.author.mention, embed=Embed(color=0xffbf00, description="That item doesn't have a use yet."))
@@ -487,7 +578,7 @@ Turn the levelup message into a set of reactions.
                             f"You are {remaining_exp_to_next} EXP away from your next level.\n"
                             f"\n"
                             f"Current Spending EXP: 💳 {full_spending_exp}\n"
-                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] else ''}"
+                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] and not self.bot.user_data['UserData'][str(member.id)]['EventData']['has_claimed'] else ''}"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
         else:
@@ -497,7 +588,7 @@ Turn the levelup message into a set of reactions.
                             f"They are {remaining_exp_to_next} EXP away from their next level.\n"
                             f"\n"
                             f"Current Spending EXP: 💳 {full_spending_exp}\n"
-                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] else ''}"
+                            f"{'Current Event EXP: 🃏 '+str(full_event_exp)+newline if self.bot.config['event_ongoing'] and not self.bot.user_data['UserData'][str(member.id)]['EventData']['has_claimed'] else ''}"
                             f"Total Cumulative EXP: 🐾 {full_cumulative_exp}"
             ))
 
@@ -762,7 +853,7 @@ Turn the levelup message into a set of reactions.
                 # check category channel
                 if msg.channel.category and msg.channel.category.id in modifiers["categoryc"]: 
                     # special case for neko media channels
-                    if msg.channel.category.id in [740663474568560671, 740663386500628570]:
+                    if msg.channel.category.id == 740663474568560671:
                         if not msg.attachments or len(msg.attachments) > 1:
                             return 0
 
@@ -808,7 +899,9 @@ Turn the levelup message into a set of reactions.
             earnings = calculate_earnings()
             self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Cumulative EXP"] += earnings
             self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Spending EXP"] += earnings
-            if self.bot.config["event_ongoing"]:
+
+            # EVENT
+            if self.bot.config["event_ongoing"] and not self.bot.user_data["UserData"][str(msg.author.id)]["EventData"]["has_claimed"]:
                 self.bot.user_data["UserData"][str(msg.author.id)]["Leveling"]["Event EXP"] += earnings
 
             # Working copy of new cumulative exp
