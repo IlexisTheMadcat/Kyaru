@@ -69,8 +69,16 @@ DATA_DEFAULTS = {
         "DBL_TOKEN":"xxx",
         "DeepAI_key":"xxx"
     },
-    "config": {}
-}
+    "config": {
+        "lottery_items": 
+            [
+                ("Placeholder name", "Placeholder code and instructions")
+            ]
+        # Add lottery items with eval: 
+        # bot.config["lottery_items"].append( ("<reward name>", "||`<code>`||\n<instructions>") )
+
+        }
+    }
 
 INIT_EXTENSIONS = [
     "admin",
