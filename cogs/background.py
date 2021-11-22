@@ -1,3 +1,4 @@
+from json import dump, dumps
 from asyncio import sleep
 from datetime import datetime
 from json import load
@@ -22,6 +23,9 @@ class BackgroundTasks(Cog):
 
         self.library_cycle_index = 0
         self.library_cycle.start()
+
+        # EVENT
+        self.rewards_list.start()
 
     @loop(seconds=60)
     async def status_change(self):
@@ -50,12 +54,12 @@ class BackgroundTasks(Cog):
         await sleep(2)
         print("[HRB: !!! Saving, do not quit...", end="\r")
 
-        if self.bot.use_firebase:
-            self.bot.database.update(self.bot.user_data)
+        #if self.bot.use_firebase:
+        self.bot.database.update(self.bot.user_data)
 
-        else:
-            with open("Files/user_data.json", "w") as f:
-                user_data = dump(self.bot.user_data, f)
+        #else:
+        with open("Files/user_data.json", "w") as f:
+            user_data = dump(self.bot.user_data, f)
 
         self.bot.inactive = self.bot.inactive + 1
         time = datetime.now().strftime("%H:%M, %m/%d/%Y")
@@ -77,15 +81,11 @@ class BackgroundTasks(Cog):
     async def library_cycle(self):
         library = self.bot.get_channel(892851304920125460)
         if not library: 
-            try: 
-                library = await self.bot.fetch_channel(892851304920125460)
-            except NotFound: 
-                self.library_cycle.cancel()
+            self.library_cycle.cancel()
 
         try: 
             message = await library.fetch_message(892947918879862875)
-        except NotFound: 
-            await sleep(10)
+        except NotFound:
             return
 
         with open("Files/library_cycles.json", "r") as f:
@@ -103,6 +103,23 @@ class BackgroundTasks(Cog):
             self.library_cycle_index = 0
         else:
             self.library_cycle_index += 1
+
+
+    # EVENT
+    @loop(seconds=10)
+    async def rewards_list(self):
+        updates = self.bot.get_channel(740693241833193502)
+        if not updates: 
+            self.rewards_list.cancel()
+
+        try: 
+            message = await updates.fetch_message(912205363233837088)
+        except NotFound:
+            return
+
+        await message.edit(embed=Embed(
+            title="Kyaru Lottery! Available Reward Pool",
+            description="- "+"\n- ".join([reward[0] for reward in self.bot.config["lottery_items"]])))
 
     @status_change.before_loop
     async def sc_wait(self):
@@ -124,11 +141,18 @@ class BackgroundTasks(Cog):
         await self.bot.wait_until_ready()
         await sleep(5)
 
+    # EVENT
+    @rewards_list.before_loop
+    async def rl_wait(self):
+        await self.bot.wait_until_ready()
+        await sleep(10)
+
     def cog_unload(self):
         self.status_change.cancel()
         self.save_data.cancel()
         self.disboard_reminder.cancel()
         self.library_cycle.cancel()
+        self.rewards_list.cancel()
 
 def setup(bot):
     bot.add_cog(BackgroundTasks(bot))
