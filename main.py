@@ -1,5 +1,3 @@
-# PUBLIC NOTICE: Forking this bot will cause you immediate failures.
-
 # IMPORTS
 from os.path import exists
 from json import load
@@ -56,8 +54,11 @@ DATA_DEFAULTS = {
                 "Event EXP": 0
             },
 
-            "has_boosted": False
+            "has_boosted": False,
 
+            "EventData": {
+                "has_claimed": False    
+            }
         }
     },
     "GlobalEventData": {
