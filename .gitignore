@@ -2,5 +2,6 @@
 .vs
 Storage
 Workspace
-*RulesBackup.txt*
+user_data.json
 *ServiceAccountKey.json*
+*RulesBackup.txt*
