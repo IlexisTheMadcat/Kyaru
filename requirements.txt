@@ -1,0 +1,13 @@
+discord==1.7.3
+discord_components==2.1.0
+firebase_admin
+NudeNet==2.0.9
+tensorboard==2.5.0
+tensorboard-data-server==0.6.1
+tensorboard-plugin-wit==1.8.0
+tensorflow-estimator==2.5.0
+Keras==2.2.4
+Keras-Applications==1.0.6
+keras-nightly==2.5.0.dev2021032900
+Keras-Preprocessing==1.0.5
+Pillow
