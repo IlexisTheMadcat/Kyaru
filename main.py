@@ -15,18 +15,6 @@ from utils.errorlog import ErrorLog
 from utils.FirebaseDB import FirebaseDB
 
 # NOTES
-
-CONFIG_DEFAULTS = {
-    "debug_mode": False,        
-    # Print exceptions to stdout.
-
-    "error_log_channel": 734499801697091654,
-    # The channel that errors are sent to. 
-
-    "event_ongoing": False
-    # Whether event-related commands and actions should run.
-}
-
 DATA_DEFAULTS = {
     "UserData": {
         "UID": {  # User Settings
@@ -62,23 +50,30 @@ DATA_DEFAULTS = {
         }
     },
     "GlobalEventData": {
-        "participants": ["UID"]
+        "participants": ["UID"],
+        "lottery_items": [
+            ("Placeholder name", "Placeholder code and instructions")
+        ]
+        # Add lottery items with eval: 
+        # bot.config["lottery_items"].append( ("<reward name>", "||`<code>`||\n<instructions>") )
     },
     "Tokens": {
         "BOT_TOKEN":"xxx",
         "DBL_TOKEN":"xxx",
         "DeepAI_key":"xxx"
     },
-    "config": {
-        "lottery_items": 
-            [
-                ("Placeholder name", "Placeholder code and instructions")
-            ]
-        # Add lottery items with eval: 
-        # bot.config["lottery_items"].append( ("<reward name>", "||`<code>`||\n<instructions>") )
 
-        }
+    "config": {
+        "debug_mode": False,        
+        # Print exceptions to stdout.
+
+        "error_log_channel": 734499801697091654,
+        # The channel that errors are sent to. 
+
+        "event_ongoing": False
+        # Whether event-related commands and actions should run.
     }
+}
 
 INIT_EXTENSIONS = [
     "admin",
@@ -116,7 +111,6 @@ else:
         db = None
         user_data = load(f)
 
-user_data = db.copy()
 # Check the database
 for key in DATA_DEFAULTS:
     if key not in user_data:
@@ -130,16 +124,17 @@ for key in found_data:
         print(f"[REDUNDANCY] Invalid data \'{key}\' found. "
               f"Removed key from file.")
 del found_data  # Remove variable from namespace
+
 config_data = user_data["config"]
 # Check the bot config
-for key in CONFIG_DEFAULTS:
+for key in DATA_DEFAULTS['config']:
     if key not in config_data:
-        config_data[key] = CONFIG_DEFAULTS[key]
+        config_data[key] = DATA_DEFAULTS['config'][key]
         print(f"[MISSING VALUE] Config '{key}' missing. "
-              f"Inserted default '{CONFIG_DEFAULTS[key]}'")
+              f"Inserted default '{DATA_DEFAULTS['config'][key]}'")
 found_data = deepcopy(config_data)  # Duplicate to avoid RuntimeError exception
 for key in found_data:
-    if key not in CONFIG_DEFAULTS:
+    if key not in DATA_DEFAULTS['config']:
         config_data.pop(key)  # Remove redundant data
         print(f"[REDUNDANCY] Invalid config \'{key}\' found. "
               f"Removed key from file.")

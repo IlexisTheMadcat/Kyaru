@@ -40,7 +40,7 @@ class Leveling(Cog):
             "Skip A Level": 10000
         }
         self.event_storefront = {
-            "Lottery Ticket": 1250
+            "Lottery Ticket": 250
         }
 
         self.rewards = {
@@ -452,21 +452,21 @@ Note: Item names are case sensitive.
                 await ctx.send("You have already claimed from the event. All other lottery tickets have been removed.")
                 return
 
-            draw = random.randint(1, 30)  # 30, not 2!
-            if draw != 15:  # 15, not 1!
+            draw = random.choice(['', '', '', '=+=']) 
+            if draw != "=+=":  
                 await ctx.send(
                     embed=Embed(
                         title="Aww rats!",
                         description="Better luck next time!"
-                    ).set_footer(text="If it helps, there is a 1 in 50 chance you can get any reward!"))
+                    ).set_footer(text="If it helps, there is a 1 in 5 chance you can get any reward!"))
             else:
                 await ctx.send(
                     embed=Embed(
                         title="Congrats!",
                         description="Check your DMs!"))
 
-                reward_number = random.randint(0, len(self.bot.config["lottery_items"])-1)
-                reward = self.bot.config["lottery_items"][reward_number]
+                reward_number = random.randint(0, len(self.self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"])-1)
+                reward = self.self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"][reward_number]
 
                 edit = await ctx.author.send(
                     embed=Embed(
@@ -513,7 +513,7 @@ Note: Item names are case sensitive.
                             ), components=[])
 
                         self.bot.user_data["UserData"][str(ctx.author.id)]["EventData"]["has_claimed"] = True
-                        self.bot.config["lottery_items"].pop(reward_number)
+                        self.self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"].pop(reward_number)
 
                     elif interaction.component.id == "reject":
                         await edit.edit(

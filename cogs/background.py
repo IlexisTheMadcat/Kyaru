@@ -119,7 +119,7 @@ class BackgroundTasks(Cog):
 
         await message.edit(embed=Embed(
             title="Kyaru Lottery! Available Reward Pool",
-            description="- "+"\n- ".join([reward[0] for reward in self.bot.config["lottery_items"]])))
+            description="- "+"\n- ".join([reward[0] for reward in self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"]])))
 
     @status_change.before_loop
     async def sc_wait(self):
