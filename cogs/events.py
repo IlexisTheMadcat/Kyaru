@@ -1011,7 +1011,7 @@ class Events(Cog):
                     description="This is most likely the best neko-related server you can find. We have an entire archive of neko pictures, guarenteed to be high quality with the use of Waifu2x on every image uploaded.\n"
                                 "Can't find your way around? Collapse every category, then open only the one you need into. It will make more sense to you. Looking for pictures? Star here: <#740664415401017416>.\n"
                                 "The community also evolves with community feedback. If you think something is missing or wrong, send your thoughts in <#740728594766102538> and an admin will take it into consideration."
-                ).set_thumbnail(url=str(ctx.guild.icon_url)))
+                ).set_thumbnail(url=str(member.guild.icon_url)))
             except Forbidden:
                 pass
 
