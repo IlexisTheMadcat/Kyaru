@@ -2,15 +2,20 @@ from json import dump, dumps
 from asyncio import sleep
 from datetime import datetime
 from json import load
+from datetime import datetime
 
 from discord.activity import Activity
 from discord.enums import ActivityType, Status
 from discord.ext.commands.cog import Cog
-from discord.ext.tasks import loop
+from discord.ext.tasks import loop, Loop
 from discord.errors import NotFound
-from discord_components import Button
+from discord.ext.commands import is_owner
+from discord.ext.commands.core import command
 
 from utils.classes import Embed
+from utils.MALSchedule.malschedule import MALSchedule
+
+newline = "\n"
 
 class BackgroundTasks(Cog):
     """Background loops"""
@@ -20,12 +25,38 @@ class BackgroundTasks(Cog):
         self.save_data.start()
         self.status_change.start()
         self.disboard_reminder.start()
+        self.daily_anime_releases.start()
 
         self.library_cycle_index = 0
         self.library_cycle.start()
 
         # EVENT
         self.rewards_list.start()
+
+    @is_owner()
+    @command()
+    async def restart_task(self, ctx, task):
+        try: task_object = getattr(self, task)
+        except AttributeError: 
+            return await ctx.send(
+                embed=Embed(
+                    color=0xff0000,
+                    title="Task Not Found",
+                    description="The BackgroundTasks cog does not have a task by that name."))
+        try:
+            task_object.restart()
+        except AttributeError:
+            return await ctx.send(
+                embed=Embed(
+                    color=0xff0000,
+                    title="Task Not Found",
+                    description="The BackgroundTasks cog does not have a task by that name."))
+
+        return await ctx.send(
+            embed=Embed(
+                color=0x00ff00,
+                title="Task Restarted",
+                description=f"Restarted task `{task}`."))
 
     @loop(seconds=60)
     async def status_change(self):
@@ -121,6 +152,39 @@ class BackgroundTasks(Cog):
             title="Kyaru Lottery! Available Reward Pool",
             description="- "+"\n- ".join([reward[0] for reward in self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"]])))
 
+    @loop(hours=24)
+    async def daily_anime_releases(self):
+        schedular = MALSchedule()
+        schedule = schedular.request_schedule()
+
+        weekday_str = {
+            0: "Monday",
+            1: "Tuesday",
+            2: "Wednesday",
+            3: "Thursday",
+            4: "Friday",
+            5: "Saturday",
+            6: "Sunday",
+        }
+
+        animes = schedule[weekday_str[datetime.today().weekday()]]
+
+        message_part = []
+        for anime in animes:
+            message_part.append(
+                f"Title: **{anime.name}**\n"
+                f"MAL Rating: {anime.score}\n"
+                f"Tags: {', '.join(anime.tags) if anime.tags else 'None provided'}\n"
+            )
+
+        channel = await self.bot.fetch_channel(911811528251027486)
+        await channel.send(
+            embed = Embed(
+                title="Anime Releases",
+                description=f"Here are some top animes that have been released/updated today:\n"
+                            f"{newline.join(message_part[0:10])}"
+            ).set_image(url=animes[0].image_url))
+
     @status_change.before_loop
     async def sc_wait(self):
         await self.bot.wait_until_ready()
@@ -135,6 +199,11 @@ class BackgroundTasks(Cog):
     async def dr_wait(self):
         await self.bot.wait_until_ready()
         await sleep(300)
+
+    @daily_anime_releases.before_loop
+    async def dar_wait(self):
+        await self.bot.wait_until_ready()
+        await sleep(10)
 
     @library_cycle.before_loop
     async def lc_wait(self):
@@ -151,6 +220,7 @@ class BackgroundTasks(Cog):
         self.status_change.cancel()
         self.save_data.cancel()
         self.disboard_reminder.cancel()
+        self.daily_anime_releases.cancel()
         self.library_cycle.cancel()
         self.rewards_list.cancel()
 
