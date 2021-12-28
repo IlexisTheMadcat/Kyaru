@@ -326,7 +326,7 @@ class Events(Cog):
         guild = member.guild
         pfps = self.bot.get_channel(862146341538627604)
                 
-        if member.permissions_in(pfps).administrator:
+        if 767792345239519254 in [role.id for role in member.roles]:
             return True
 
         r = post(
@@ -454,7 +454,7 @@ class Events(Cog):
 
         if msg.type == MessageType.premium_guild_subscription:
             if not self.bot.user_data["UserData"][str(msg.author.id)]["has_boosted"]:
-                await msg.send(
+                await msg.channel.send(
                     content=msg.author.mention,
                     embed=Embed(
                         title="Thanks For Boosting!",
@@ -1136,8 +1136,11 @@ class Events(Cog):
             guild = self.bot.get_guild(740662779106689055)
             try: member = await guild.fetch_member(pos.id)
             except NotFound: return
-            if member and not await self.confirm_pfp(member):
-                return
+
+            if 851225537165918259 not in [role.id for role in member.roles]:
+                return  # Ignore members who don't even have the first rank to save DeepAI credit.
+
+            if member and not await self.confirm_pfp(member): return
 
     # Catgirl Heaven server icon changes
     # --------------------------------------------------------------------------------------------------------------------------

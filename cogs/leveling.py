@@ -803,9 +803,6 @@ Note: Item names are case sensitive.
     @Cog.listener()
     async def on_message(self, msg):
         if msg.channel.id == 870360906561904651:
-            if msg.author.bot:
-                return
-
             if msg.author.id == self.bot.user.id:
                 await sleep(5)
                 await msg.delete()

@@ -9,7 +9,8 @@ from copy import deepcopy
 
 from nudenet import NudeDetector
 from PIL import Image, ImageDraw
-from discord import Member, File, utils
+from discord.channel import TextChannel, VoiceChannel
+from discord import Member, File, utils as dutils
 from discord.errors import NotFound
 from discord.ext.commands import cooldown, BucketType, is_owner
 from discord.ext.commands.cog import Cog
