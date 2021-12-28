@@ -942,7 +942,7 @@ class Events(Cog):
     # Neko Heaven welcome message
     @Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id == 740662779106689055 and not member.bot:
+        if member.guild.id in [740662779106689055, 925217474654388264] and not member.bot:
             suspected_raiders = [
                 889059743262453771, 
                 743733203528843334, 
@@ -1000,20 +1000,20 @@ class Events(Cog):
                 self.just_joined[0].pop(member.id)
                 return
 
-            guild = self.bot.get_guild(740662779106689055)
             # Scan for NSFW
             if not await self.confirm_pfp(member):
                 return
 
-            try:
-                await member.send(embed=Embed(
-                    title="Welcome to Neko Heaven!",
-                    description="This is most likely the best neko-related server you can find. We have an entire archive of neko pictures, guarenteed to be high quality with the use of Waifu2x on every image uploaded.\n"
-                                "Can't find your way around? Collapse every category, then open only the one you need into. It will make more sense to you. Looking for pictures? Star here: <#740664415401017416>.\n"
-                                "The community also evolves with community feedback. If you think something is missing or wrong, send your thoughts in <#740728594766102538> and an admin will take it into consideration."
-                ).set_thumbnail(url=str(member.guild.icon_url)))
-            except Forbidden:
-                pass
+            if member.guild.id == 740662779106689055:
+                try:
+                    await member.send(embed=Embed(
+                        title="Welcome to Neko Heaven!",
+                        description="This is most likely the best neko-related server you can find. We have an entire archive of neko pictures, guarenteed to be high quality with the use of Waifu2x on every image uploaded.\n"
+                                    "Can't find your way around? Collapse every category, then open only the one you need into. It will make more sense to you. Looking for pictures? Star here: <#740664415401017416>.\n"
+                                    "The community also evolves with community feedback. If you think something is missing or wrong, send your thoughts in <#740728594766102538> and an admin will take it into consideration."
+                    ).set_thumbnail(url=str(member.guild.icon_url)))
+                except Forbidden:
+                    pass
 
             img = Image.open(BytesIO(await member.avatar_url_as(format='png').read())).convert("RGBA")
             
@@ -1037,7 +1037,11 @@ class Events(Cog):
             os.remove(f"Workspace/user_joined_{member.id}.png")
             image_url = image_container.attachments[0].url
 
-            general = self.bot.get_channel(741381152543211550)
+            generals = {
+                740662779106689055:741381152543211550,  # A Catgirl Paradise
+                925217474654388264:925217833737142303   # A Roleplay World
+            }
+            general = self.bot.get_channel(generals[member.guild.id])
 
             welcome_msg = await general.send(content=f"Welcome {member.mention}! Have fun and stay safe!", 
                 embed=Embed(
@@ -1051,21 +1055,24 @@ class Events(Cog):
                 self.bot.user_data["UserData"][str(member.id)] = deepcopy(self.bot.defaults["UserData"]["UID"])
 
             await sleep(30)
-            try:
-                await member.add_roles(
-                    member.guild.get_role(829504771073114154),
-                    member.guild.get_role(909302321224253460),
-                    member.guild.get_role(909301337689296948),
-                    member.guild.get_role(769008950611804190),
-                    member.guild.get_role(909300699412709416),
-                    member.guild.get_role(909300758351069244),
-                    member.guild.get_role(909300823383752734),
-                    member.guild.get_role(909301283310161950))
+            if member.guild.id == 740662779106689055:
+                try:
+                    await member.add_roles(
+                        member.guild.get_role(829504771073114154),
+                        member.guild.get_role(909302321224253460),
+                        member.guild.get_role(909301337689296948),
+                        member.guild.get_role(769008950611804190),
+                        member.guild.get_role(909300699412709416),
+                        member.guild.get_role(909300758351069244),
+                        member.guild.get_role(909300823383752734),
+                        member.guild.get_role(909301283310161950))
 
-            except NotFound:
-                return
+                except NotFound:
+                    return
+            else:
+                pass
 
-        elif member.guild.id == 740662779106689055 and member.bot:
+        elif member.guild.id in [740662779106689055, 925217474654388264] and member.bot:
             general = self.bot.get_channel(741381152543211550)
             
             welcome_msg = await general.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", 
@@ -1078,11 +1085,15 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_member_remove(self, member):
-        if member.guild.id == 740662779106689055:
+        if member.guild.id in [740662779106689055, 925217474654388264]:
             if str(member.id) in self.bot.user_data["UserData"]:
                 self.bot.user_data["UserData"].pop(str(member.id))
 
-            general = self.bot.get_channel(741381152543211550)
+            generals = {
+                740662779106689055: 741381152543211550,  # A Catgirl Paradise
+                925217474654388264: 925217833737142303   # A Roleplay World
+            }
+            general = self.bot.get_channel(generals[member.guild.id])
 
             if str(member.id) in self.just_joined[0]:
                 welcome_msg = self.just_joined[0][str(member.id)]
