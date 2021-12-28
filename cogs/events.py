@@ -1073,7 +1073,11 @@ class Events(Cog):
                 pass
 
         elif member.guild.id in [740662779106689055, 925217474654388264] and member.bot:
-            general = self.bot.get_channel(741381152543211550)
+            generals = {
+                740662779106689055:741381152543211550,  # A Catgirl Paradise
+                925217474654388264:925217833737142303   # A Roleplay World
+            }
+            general = self.bot.get_channel(generals[member.guild.id])
             
             welcome_msg = await general.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", 
                 embed=Embed(
