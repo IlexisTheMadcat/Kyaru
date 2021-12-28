@@ -133,6 +133,8 @@ class RoleplayUniverse(Cog):
                             ).set_image(url=msg.attachments[0]).set_footer(text=f"Age: {match.group(2)}\n")
                         )
 
+                        await msg.author.add_roles(msg.guild.get_role(925412934195241021))
+
                     if interaction.component.id == "approve":
                         emb.set_footer(text=f"✅ Approved: {interaction.user} ({interaction.user.id})")
                         await control.edit(embed=emb, components=[])
