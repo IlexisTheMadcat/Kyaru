@@ -77,7 +77,21 @@ class RoleplayUniverse(Cog):
                                     "You must also attach an image."
                     )
                 )
+                await msg.author.send(
+                    embed=Embed(
+                        title="Invalid Submission",
+                        description=f"Please copy everything in the code block and try to fix it.\n"
+                                    f"```\n"
+                                    f"{msg.content.strip('`')}\n"
+                                    f"```"
+                        ).set_footer(text="Do not include ``` in your response!")
+                    )
                 return
+
+            # Copy attachment
+            dcfileobj = await msg.attachments[0].to_file()
+            buffer_target = await self.bot.fetch_channel(789198608175202394)
+            buffer_msg = await buffer_target.send(file=dcfileobj)
 
             emb = Embed(
                     title=match.group(1),
@@ -88,7 +102,7 @@ class RoleplayUniverse(Cog):
                         f"Biography: {match.group(5)}\n"
                         f"\n"
                         f"Submission by {msg.author.mention}"
-                ).set_image(url=msg.attachments[0])
+                ).set_image(url=buffer_msg.attachments[0])
 
             approve_characters = await self.bot.fetch_channel(925236492085907456)
             control = await approve_characters.send(
@@ -130,7 +144,7 @@ class RoleplayUniverse(Cog):
                                     f"\n"
                                     f"🐾 Biography 🐾\n"
                                     f"{match.group(5)}"
-                            ).set_image(url=msg.attachments[0]).set_footer(text=f"Age: {match.group(2)}\n")
+                            ).set_image(url=buffer_msg.attachments[0]).set_footer(text=f"Age: {match.group(2)}\n")
                         )
 
                         await msg.author.add_roles(msg.guild.get_role(925412934195241021))
@@ -173,6 +187,16 @@ class RoleplayUniverse(Cog):
 
                             else:
                                 reason = m.content
+
+                        await msg.author.send(
+                            embed=Embed(
+                                title="Submission Rejected",
+                                description=f"Please copy everything in the code block and try to fix it.\n"
+                                            f"```\n"
+                                            f"{msg.content.strip('`')}\n"
+                                            f"```"
+                                ).set_footer(text=f"Reason for rejection: {reason}")
+                            )
 
                         emb.set_footer(text=f"❌ Rejected: {interaction.user} ({interaction.user.id})\n📄 Reason: {reason}")
                         await control.edit(embed=emb, components=[])
