@@ -1,5 +1,6 @@
 *__pycache__*
 debug.log
+.venv
 .vs
 Storage
 Workspace
