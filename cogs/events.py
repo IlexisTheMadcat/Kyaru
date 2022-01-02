@@ -1068,9 +1068,16 @@ class Events(Cog):
                         member.guild.get_role(909301283310161950))
 
                 except NotFound:
-                    return
-            else:
-                pass
+                    pass
+
+            elif member.guild.id == 925217474654388264:
+                try:
+                    await member.add_roles(
+                        member.guild.get_role(925415568297853039),
+                        member.guild.get_role(925256282489913344))
+
+                except NotFound:
+                    pass
 
         elif member.guild.id in [740662779106689055, 925217474654388264] and member.bot:
             generals = {
