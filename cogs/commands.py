@@ -31,23 +31,31 @@ class Commands(Cog):
     async def give_divider_roles(self, ctx):
         """Give everyone role dividers. Should be an automatic process for people joining."""
         edit = await ctx.send("<a:loading:813237675553062954> Giving everyone role dividers. This will take awhile.")
-        for member in ctx.guild.members:
-            if 829504771073114154 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(829504771073114154))
-            if 909302321224253460 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909302321224253460))
-            if 909301337689296948 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909301337689296948))
-            if 769008950611804190 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(769008950611804190))
-            if 909300699412709416 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909300699412709416))
-            if 909300758351069244 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909300758351069244))
-            if 909300823383752734 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909300823383752734))
-            if 909301283310161950 not in [role.id for role in member.roles]:
-                await member.add_roles(ctx.guild.get_role(909301283310161950))
+
+        if ctx.guild.id == 740662779106689055:
+            for member in ctx.guild.members:
+                if 829504771073114154 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(829504771073114154))
+                if 909302321224253460 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909302321224253460))
+                if 909301337689296948 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909301337689296948))
+                if 769008950611804190 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(769008950611804190))
+                if 909300699412709416 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909300699412709416))
+                if 909300758351069244 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909300758351069244))
+                if 909300823383752734 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909300823383752734))
+                if 909301283310161950 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909301283310161950))
+        elif ctx.guild.id == 925217474654388264:
+            for member in ctx.guild.members:
+                if 925415568297853039 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(829504771073114154))
+                if 925256282489913344 not in [role.id for role in member.roles]:
+                    await member.add_roles(ctx.guild.get_role(909302321224253460))
 
         await ctx.send(ctx.author.mention, delete_after=5)
         await edit.edit(content="✅ Finished.")
@@ -66,13 +74,13 @@ class Commands(Cog):
             await ctx.send(embed=Embed(
                 title=f"{user}'s Avatar",
             ).set_image(url=user.avatar_url))
-            # ).set_image(url=user.avatar.url))
+            # ).set_image(url=user.avatar_url))
             
         if not userID:
             await ctx.send(embed=Embed(
                 title="Your Avatar",
             ).set_image(url=ctx.author.avatar_url))
-            # ).set_image(url=user.avatar.url))
+            # ).set_image(url=user.avatar_url))
     
     @command(aliases=["auto_emb"])
     @bot_has_permissions(send_messages=True)
@@ -329,7 +337,7 @@ class Commands(Cog):
             await ctx.author.send("That command cannot be used here.", delete_after=5)
             return
         
-        if ctx.author.permissions_in(ctx.channel).manage_nicknames:
+        if ctx.channel.permissions_for(ctx.author).manage_nicknames:
             await ctx.send("Change your own nickname. No need to rely on your peers.")
             return
         
