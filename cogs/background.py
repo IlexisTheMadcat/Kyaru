@@ -81,9 +81,9 @@ class BackgroundTasks(Cog):
 
     @loop(seconds=297.5)
     async def save_data(self):
-        print("[HRB: ... Saving, do not quit...", end="\r")
+        print("[NKH: ... Saving, do not quit...", end="\r")
         await sleep(2)
-        print("[HRB: !!! Saving, do not quit...", end="\r")
+        print("[NKH: !!! Saving, do not quit...", end="\r")
 
         #if self.bot.use_firebase:
         self.bot.database.update(self.bot.user_data)
@@ -115,7 +115,7 @@ class BackgroundTasks(Cog):
             self.library_cycle.cancel()
 
         try: 
-            message = await library.fetch_message(892947918879862875)
+            message = await library.fetch_message(931022009389948999)
         except NotFound:
             return
 
@@ -123,7 +123,7 @@ class BackgroundTasks(Cog):
             library_cycle_entries = load(f)["books"]
 
         visual_index = ["▫️　"]*len(library_cycle_entries)
-        visual_index[self.library_cycle_index] = "◼️　"  # Green square
+        visual_index[self.library_cycle_index] = "◼️　"  # Small Black Square
 
         await message.edit(
             content="> If you want to add relevant books to this cycle, please use the <#740728594766102538> channel.",
@@ -154,36 +154,41 @@ class BackgroundTasks(Cog):
 
     @loop(hours=24)
     async def daily_anime_releases(self):
-        schedular = MALSchedule()
-        schedule = schedular.request_schedule()
+        try:
+            schedular = MALSchedule()
+            schedule = schedular.request_schedule()
 
-        weekday_str = {
-            0: "Monday",
-            1: "Tuesday",
-            2: "Wednesday",
-            3: "Thursday",
-            4: "Friday",
-            5: "Saturday",
-            6: "Sunday",
-        }
+            weekday_str = {
+                0: "Monday",
+                1: "Tuesday",
+                2: "Wednesday",
+                3: "Thursday",
+                4: "Friday",
+                5: "Saturday",
+                6: "Sunday",
+            }
 
-        animes = schedule[weekday_str[datetime.today().weekday()]]
+            animes = schedule[weekday_str[datetime.today().weekday()]]
 
-        message_part = []
-        for anime in animes:
-            message_part.append(
-                f"Title: **{anime.name}**\n"
-                f"MAL Rating: {anime.score}\n"
-                f"Tags: {', '.join(anime.tags) if anime.tags else 'None provided'}\n"
-            )
+            message_part = []
+            for anime in animes:
+                message_part.append(
+                    f"Title: **{anime.name}**\n"
+                    f"MAL Rating: {anime.score}\n"
+                    f"Tags: {', '.join(anime.tags) if anime.tags else 'None provided'}\n"
+                )
 
-        channel = await self.bot.fetch_channel(911811528251027486)
-        await channel.send(
-            embed = Embed(
-                title="Anime Releases",
-                description=f"Here are some top animes that have been released/updated today:\n"
-                            f"{newline.join(message_part[0:10])}"
-            ).set_image(url=animes[0].image_url))
+            channel = await self.bot.fetch_channel(911811528251027486)
+            await channel.send(
+                embed = Embed(
+                    title="Anime Releases",
+                    description=f"Here are some top animes that have been released/updated today:\n"
+                                f"{newline.join(message_part[0:10])}"
+                ).set_image(url=animes[0].image_url))
+        except Exception as e:
+            from sys import exc_info
+            error = exc_info()
+            await self.bot.errorlog.send(error, event=f"background task (temp)")
 
     @status_change.before_loop
     async def sc_wait(self):
