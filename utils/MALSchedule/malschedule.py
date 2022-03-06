@@ -1,9 +1,18 @@
+from multiprocessing.sharedctypes import Value
 import requests
 from dataclasses import dataclass
 
 from bs4 import BeautifulSoup, Tag
 
-from .utils import convert_list_iterator as convert
+# from utils import convert_list_iterator (doesn't work for some reason on Kyaru)
+# ----------------------
+def convert(iterator) -> list:
+    new_list = [i for i in iterator]
+    while "\n" in new_list:
+        new_list.remove("\n")
+
+    return new_list
+# ----------------------
 
 
 class _FetchError(Exception):
@@ -13,7 +22,7 @@ class _FetchError(Exception):
 @dataclass
 class Anime:
     name: str
-    producer: str
+    broadcasters: str
     tags: list
     image_url: str
     score: float
@@ -66,13 +75,17 @@ class MALSchedule:
                                               ).find("h2", class_="h2_anime_title"
                                               ).a.text
 
-                    producer_info = anime_entry.find("div", class_=""
-                              ).find("div", class_="prodsrc"
-                              ).find("span", class_="producer")
-                    if not producer_info.find("a"):
-                        anime["producer"] = "Not provided"
-                    else:
-                        anime["producer"] = producer_info.a.text
+                    broadcasters = anime_entry.find("div", class_=""
+                                             ).find("div", class_="prodsrc"
+                                             ).find("div", class_="broadcast")
+                    
+                    anime["broadcasters"] = []
+                    if broadcasters.find("a"):
+                        #print(convert(broadcasters.children))
+                        for ind, broadcaster in enumerate(convert(broadcasters.children)):
+                            if ind == 0: continue  # first element is a javascript modal of broadcaster information
+                            if ind % 2 != 0: continue  # every other element is a space for some reason
+                            anime["broadcasters"].append(broadcaster["title"])
 
                     anime["tags"] = []
                     for tag_element in convert(
@@ -92,20 +105,22 @@ class MALSchedule:
                     try: anime["score"] = float(
                         anime_entry.find("div", class_="information"
                                   ).find("div", class_="scormem"
-                                  ).find("span", title="Score"
+                                  ).find("div", title="Score"
                                   ).text.strip()
                     )
                     except ValueError: anime["score"] = 0
 
                     try: anime["mal_members"] = int(
-                            anime_entry.find("div", class_="information"
-                                    ).find("div", class_="scormem"
-                                    ).find("span", title="Members"
-                                    ).text.replace(",", "").strip("\n").strip()
-                    )
+                        anime_entry.find("div", class_="information"
+                                  ).find("div", class_="scormem"
+                                  ).find("div", title="Members"
+                                  ).text.replace(",", "").strip("\n").strip().replace("K", "000")
+                        )
                     except ValueError: anime["mal_members"] = 0
 
-                    anime["synopsis"] = anime_entry.find("div", class_="synopsis js-synopsis").span.text.replace("\r", "")
+                    anime["synopsis"] = anime_entry.find("div", class_="synopsis js-synopsis"
+                                                  ).find("p", class_="preline"
+                                                  ).text.replace("\r", "")
                         
                     anime["metadata"] = dict()
                     for i in anime_entry.find("div", class_="synopsis js-synopsis").find_all("p", class_="mb4 mt8"):

@@ -690,7 +690,7 @@ Note: Item names are case sensitive.
 
         if str(member.id) not in self.bot.user_data["UserData"]:
             self.bot.user_data["UserData"][str(member.id)] = \
-                self.bot.defaults["UserData"]["UID"]
+                deepcopy(self.bot.defaults["UserData"]["UID"])
 
         cumulative_exp = 0
         working_level = deepcopy(level)

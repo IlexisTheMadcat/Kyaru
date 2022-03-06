@@ -1,6 +1,6 @@
 # IMPORTS
 from os.path import exists
-from json import load
+from json import dump, load
 from sys import exc_info
 from copy import deepcopy
 
@@ -162,7 +162,7 @@ bot = Bot(
     database=db,
     user_data=user_data,
     defaults=DATA_DEFAULTS,
-    auth=db["Tokens"],
+    auth=user_data["Tokens"],
     use_firebase=DATA_CLOUD
 )
 

@@ -7,7 +7,7 @@ from urllib.request import urlretrieve as udownload
 from asyncio import TimeoutError
 from copy import deepcopy
 
-from nudenet import NudeDetector
+# from nudenet import NudeDetector
 from PIL import Image, ImageDraw
 from discord.channel import TextChannel, VoiceChannel
 from discord import Member, File, utils as dutils
@@ -192,9 +192,9 @@ class Commands(Cog):
                 ).set_footer(text="ERR."))
             return
 
-    @command(aliases=["s_nsfw"])
-    @has_permissions(attach_files=True)
-    @bot_has_permissions(send_messages=True, embed_links=True)
+    # @command(aliases=["s_nsfw"])
+    # @has_permissions(attach_files=True)
+    # @bot_has_permissions(send_messages=True, embed_links=True)
     async def scan_nsfw(self, ctx, url=None):
         if ctx.message.attachments:
             if len(ctx.message.attachments) > 1:
@@ -446,6 +446,25 @@ class Commands(Cog):
                         f"Reason: {reason}")
 
                     return
+
+    @command(aliases=["awaken", "alivify", "undie", "revive"])
+    @cooldown(2, 3600, BucketType.guild)
+    async def deadchat(self, ctx):
+        allowed_channels = [
+            741381152543211550,  # #🐾general
+            911824312875499530,  # #🐾general-anime
+            748515762129469557,  # #🐾general-gaming
+            851945164163121152,  # #🐾general-music
+            859443465304408094,  # #🐾general-art
+            892851045401788506,  # #🐾general-literature
+            740748596500234340,  # #🐾general-nsfw
+        ]
+        if ctx.channel.id in allowed_channels:
+            await ctx.message.delete()
+            await ctx.send(f"<@&935237590012018769>, {ctx.author.mention} wants to chat!")
+        else:
+            await ctx.send("You can only use this in a general chat.")
+            self.cooldown.reset()
 
     @command(aliases=["boost", "gbr"])
     @has_permissions(administrator=True)

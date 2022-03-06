@@ -1097,8 +1097,8 @@ class Events(Cog):
     @Cog.listener()
     async def on_member_remove(self, member):
         if member.guild.id in [740662779106689055, 925217474654388264]:
-            if str(member.id) in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"].pop(str(member.id))
+            if member.guild.id == 740662779106689055 and str(member.id) in self.bot.user_data["UserData"]:
+                self.bot.user_data["UserData"].pop(str(member.id))  # Make sure that leaving the RP server doesn't delete Neko Heaven user data
 
             generals = {
                 740662779106689055: 741381152543211550,  # A Catgirl Paradise
