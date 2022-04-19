@@ -614,7 +614,9 @@ class Events(Cog):
                 890646878302126120,
                 815027417399558154,  # Other channels
                 870342656314736720, 
-                866172671544524830
+                866172671544524830,
+                740725402506494072,  # image-help
+                742571100009136148,  # image-comments
             ]:
             if not msg.attachments:
                 await msg.delete()
@@ -942,7 +944,7 @@ class Events(Cog):
     # Neko Heaven welcome message
     @Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id in [740662779106689055, 925217474654388264] and not member.bot:
+        if member.guild.id == 740662779106689055 and not member.bot:
             suspected_raiders = [
                 889059743262453771, 
                 743733203528843334, 
@@ -993,7 +995,7 @@ class Events(Cog):
                     color=0xFFBF00,
                     title="Ban Notice",
                     description="🚨⛔ We've gotten reports that a large group of raiders have been detected in another neko-related server. "
-                                "Your user ID falls under this group of raiders. Due to this, you cannot be permitted to enter into Neko Heaven.\n"
+                                "Your user ID falls under this group of raiders. Due to this, you cannot be permitted to enter into Ilexis's Loft.\n"
                                 "If you believe this was in error, please join the [ban appeals server](https://discord.gg/3RYGFrbsuJ)."
                 ))
                 await member.ban()
@@ -1007,9 +1009,8 @@ class Events(Cog):
             if member.guild.id == 740662779106689055:
                 try:
                     await member.send(embed=Embed(
-                        title="Welcome to Neko Heaven!",
-                        description="This is most likely the best neko-related server you can find. We have an entire archive of neko pictures, guarenteed to be high quality with the use of Waifu2x on every image uploaded.\n"
-                                    "Can't find your way around? Collapse every category, then open only the one you need into. It will make more sense to you. Looking for pictures? Star here: <#740664415401017416>.\n"
+                        title="Welcome to Ilexis's Loft!",
+                        description="This is a really great place to meet others and Ilexis Nakamori herself! Soon to be a future vtuber, she wants to make people smile, despite her shortcomings when it comes to speech or anxiety. Help her out, it means alot to me and her! :3\n"
                                     "The community also evolves with community feedback. If you think something is missing or wrong, send your thoughts in <#740728594766102538> and an admin will take it into consideration."
                     ).set_thumbnail(url=str(member.guild.icon_url)))
                 except Forbidden:
@@ -1037,13 +1038,9 @@ class Events(Cog):
             os.remove(f"Workspace/user_joined_{member.id}.png")
             image_url = image_container.attachments[0].url
 
-            generals = {
-                740662779106689055:741381152543211550,  # A Catgirl Paradise
-                925217474654388264:925217833737142303   # A Roleplay World
-            }
-            general = self.bot.get_channel(generals[member.guild.id])
+            door_logs = self.bot.get_channel(965796356503527535)
 
-            welcome_msg = await general.send(content=f"Welcome {member.mention}! Have fun and stay safe!", 
+            welcome_msg = await door_logs.send(content=f"Welcome {member.mention}! Have fun and stay safe!", 
                 embed=Embed(
                     title=f"{member.name} just joined the server!",
                 ).set_image(url=image_url
@@ -1079,14 +1076,10 @@ class Events(Cog):
                 except NotFound:
                     pass
 
-        elif member.guild.id in [740662779106689055, 925217474654388264] and member.bot:
-            generals = {
-                740662779106689055:741381152543211550,  # A Catgirl Paradise
-                925217474654388264:925217833737142303   # A Roleplay World
-            }
-            general = self.bot.get_channel(generals[member.guild.id])
+        elif member.guild.id == 740662779106689055 and member.bot:
+            door_logs = self.bot.get_channel(965796356503527535)
             
-            welcome_msg = await general.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", 
+            welcome_msg = await door_logs.send(content=f"Welcome, {member.mention} [BOT]. We hope you can do something nice.", 
                 embed=Embed(
                     title=f"{member} has been added to the server.",
                 ).set_image(url=member.avatar_url
@@ -1096,32 +1089,28 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_member_remove(self, member):
-        if member.guild.id in [740662779106689055, 925217474654388264]:
-            if member.guild.id == 740662779106689055 and str(member.id) in self.bot.user_data["UserData"]:
-                self.bot.user_data["UserData"].pop(str(member.id))  # Make sure that leaving the RP server doesn't delete Neko Heaven user data
+        if member.guild.id == 740662779106689055:
+            if str(member.id) in self.bot.user_data["UserData"]:
+                self.bot.user_data["UserData"].pop(str(member.id))
 
-            generals = {
-                740662779106689055: 741381152543211550,  # A Catgirl Paradise
-                925217474654388264: 925217833737142303   # A Roleplay World
-            }
-            general = self.bot.get_channel(generals[member.guild.id])
+            door_logs = self.bot.get_channel(965796356503527535)
 
             if str(member.id) in self.just_joined[0]:
                 welcome_msg = self.just_joined[0][str(member.id)]
-                general_history = await general.history(limit=5).flatten()
+                general_history = await door_logs.history(limit=5).flatten()
 
                 if welcome_msg.id == general_history[0].id:
                     await welcome_msg.delete()
                 else:
-                    await general.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
+                    await door_logs.send(f"Looks like `{member}` left so soon. {self.bot.get_emoji(740980255581405206)}")
                 
                 self.just_joined[0].pop(str(member.id))
 
             elif not member.bot:
-                await general.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
+                await door_logs.send(content=f"`{member}` left the server. {self.bot.get_emoji(741726607516893297)}")
             
             elif member.bot:
-                await general.send(content=f"`{member}` was removed from the server.")
+                await door_logs.send(content=f"`{member}` was removed from the server.")
 
     @Cog.listener()
     async def on_member_update(self, pre, pos):
