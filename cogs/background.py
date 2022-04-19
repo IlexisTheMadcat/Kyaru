@@ -30,9 +30,6 @@ class BackgroundTasks(Cog):
         self.library_cycle_index = 0
         self.library_cycle.start()
 
-        # EVENT
-        self.rewards_list.start()
-
     @is_owner()
     @command()
     async def restart_task(self, ctx, task):
@@ -135,23 +132,6 @@ class BackgroundTasks(Cog):
         else:
             self.library_cycle_index += 1
 
-
-    # EVENT
-    @loop(seconds=10)
-    async def rewards_list(self):
-        updates = self.bot.get_channel(740693241833193502)
-        if not updates: 
-            self.rewards_list.cancel()
-
-        try: 
-            message = await updates.fetch_message(912205363233837088)
-        except NotFound:
-            return
-
-        await message.edit(embed=Embed(
-            title="Kyaru Lottery! Available Reward Pool",
-            description="- "+"\n- ".join([reward[0] for reward in self.bot.user_data["UserData"]["GlobalEventData"]["lottery_items"]])))
-
     @loop(hours=24)
     async def daily_anime_releases(self):
         try:
@@ -214,12 +194,6 @@ class BackgroundTasks(Cog):
     async def lc_wait(self):
         await self.bot.wait_until_ready()
         await sleep(5)
-
-    # EVENT
-    @rewards_list.before_loop
-    async def rl_wait(self):
-        await self.bot.wait_until_ready()
-        await sleep(10)
 
     def cog_unload(self):
         self.status_change.cancel()
