@@ -101,10 +101,7 @@ class Events(Cog):
                         await sleep(2)
                         await buffer_target.edit(overwrites=buffer_target.category.overwrites)
                         if msg.channel.id != 777189629505699850:
-                            if msg.channel.is_nsfw():
-                                category = await self.bot.fetch_channel(740663386500628570)
-                            else:
-                                category = await self.bot.fetch_channel(897696876319625286)
+                            await self.bot.fetch_channel(740663474568560671)
 
                             await msg.channel.edit(overwrites=category.overwrites)
 
@@ -131,10 +128,7 @@ class Events(Cog):
                     await conf.add_reaction("⬆")
 
                     if msg.channel.id != 777189629505699850:
-                        if msg.channel.is_nsfw():
-                            category = await self.bot.fetch_channel(740663386500628570)
-                        else:
-                            category = await self.bot.fetch_channel(897696876319625286)
+                        category = await self.bot.fetch_channel(740663474568560671)
 
                         await msg.channel.edit(overwrites=category.overwrites)
 
@@ -234,10 +228,7 @@ class Events(Cog):
                             ), delete_after=5)
 
                         if msg.channel.id != 777189629505699850:
-                            if msg.channel.is_nsfw():
-                                category = await self.bot.fetch_channel(740663386500628570)
-                            else:
-                                category = await self.bot.fetch_channel(897696876319625286)
+                            category = await self.bot.fetch_channel(740663474568560671)
 
                             await msg.channel.edit(overwrites=category.overwrites)
 
@@ -283,10 +274,7 @@ class Events(Cog):
             await msg.channel.fetch_message(msg.id)
         except NotFound:
             if msg.channel.id != 777189629505699850:
-                if msg.channel.is_nsfw():
-                    category = await self.bot.fetch_channel(740663386500628570)
-                else:
-                    category = await self.bot.fetch_channel(897696876319625286)
+                category = await self.bot.fetch_channel(740663474568560671)
 
                 await msg.channel.edit(overwrites=category.overwrites)
 
@@ -313,9 +301,7 @@ class Events(Cog):
                 
             if msg.channel.id != 777189629505699850:
                 if msg.channel.is_nsfw():
-                    category = await self.bot.fetch_channel(740663386500628570)
-                else:
-                    category = await self.bot.fetch_channel(897696876319625286)
+                    category = await self.bot.fetch_channel(740663474568560671)
 
                 await msg.channel.edit(overwrites=category.overwrites)
 
@@ -502,10 +488,7 @@ class Events(Cog):
 
                         await msg.channel.set_permissions(msg.author, send_messages=False)
                         await sleep(5)
-                        if msg.channel.is_nsfw():
-                            category = await self.bot.fetch_channel(740663386500628570)
-                        else:
-                            category = await self.bot.fetch_channel(897696876319625286)
+                        category = await self.bot.fetch_channel(740663474568560671)
 
                         await msg.channel.edit(overwrites=category.overwrites)
 
@@ -520,10 +503,7 @@ class Events(Cog):
 
                         await msg.channel.set_permissions(msg.author, send_messages=False)
                         await sleep(5)
-                        if msg.channel.is_nsfw():
-                            category = await self.bot.fetch_channel(740663386500628570)
-                        else:
-                            category = await self.bot.fetch_channel(897696876319625286)
+                        category = await self.bot.fetch_channel(740663474568560671)
 
                         await msg.channel.edit(overwrites=category.overwrites)
 
@@ -537,10 +517,7 @@ class Events(Cog):
 
                     await msg.channel.set_permissions(msg.author, send_messages=False)
                     await sleep(5)
-                    if msg.channel.is_nsfw():
-                        category = await self.bot.fetch_channel(740663386500628570)
-                    else:
-                        category = await self.bot.fetch_channel(897696876319625286)
+                    category = await self.bot.fetch_channel(740663474568560671)
 
                     await msg.channel.edit(overwrites=category.overwrites)
             
@@ -555,10 +532,7 @@ class Events(Cog):
 
                     await msg.channel.set_permissions(msg.author, send_messages=False)
                     await sleep(5)
-                    if msg.channel.is_nsfw():
-                        category = await self.bot.fetch_channel(740663386500628570)
-                    else:
-                        category = await self.bot.fetch_channel(897696876319625286)
+                    category = await self.bot.fetch_channel(740663474568560671)
 
                     await msg.channel.edit(overwrites=category.overwrites)
                     break
@@ -578,10 +552,7 @@ class Events(Cog):
 
                 await msg.channel.set_permissions(msg.author, send_messages=False)
                 await sleep(5)
-                if msg.channel.is_nsfw():
-                    category = await self.bot.fetch_channel(740663386500628570)
-                else:
-                    category = await self.bot.fetch_channel(897696876319625286)
+                category = await self.bot.fetch_channel(740663474568560671)
 
                 await msg.channel.edit(overwrites=category.overwrites)
             
@@ -596,10 +567,7 @@ class Events(Cog):
 
                     await msg.channel.set_permissions(msg.author, send_messages=False)
                     await sleep(5)
-                    if msg.channel.is_nsfw():
-                        category = await self.bot.fetch_channel(740663386500628570)
-                    else:
-                        category = await self.bot.fetch_channel(897696876319625286)
+                    category = await self.bot.fetch_channel(740663474568560671)
 
                     await msg.channel.edit(overwrites=category.overwrites)
                     break
@@ -628,10 +596,7 @@ class Events(Cog):
 
                 await msg.channel.set_permissions(msg.author, send_messages=False)
                 await sleep(5)
-                if msg.channel.is_nsfw():
-                    category = await self.bot.fetch_channel(740663386500628570)
-                else:
-                    category = await self.bot.fetch_channel(897696876319625286)
+                category = await self.bot.fetch_channel(740663474568560671)
 
                 await msg.channel.edit(overwrites=category.overwrites)
                 return
@@ -655,10 +620,7 @@ class Events(Cog):
                 
                 await msg.channel.set_permissions(msg.author, send_messages=False)
                 await sleep(5)
-                if msg.channel.is_nsfw():
-                    category = await self.bot.fetch_channel(740663386500628570)
-                else:
-                    category = await self.bot.fetch_channel(897696876319625286)
+                category = await self.bot.fetch_channel(897696876319625286)
 
                 await msg.channel.edit(overwrites=category.overwrites)
 
@@ -916,7 +878,7 @@ class Events(Cog):
                             await bot_spam.send(
                                 content=user.mention,
                                 embed=Embed(
-                                    description=f"❌ No Neko Heaven media channel mentioned. Please try again.",
+                                    description=f"❌ No NEKOS media channel mentioned. Please try again.",
                                     color=0x32d17f
                                 ), delete_after=5)
 
@@ -1135,7 +1097,7 @@ class Events(Cog):
                         color=0xFFBF00,
                         title="Warning",
                         description="I understand you want to change your nickname in Neko Heaven, however nickname changes are now enforced by command.\n"
-                                    "If you want to change your nickname, please run `k!nick <new nick>` in <#740671751293501592>.\n"))
+                                    "If you want to change your nickname, please run `k!nick <new nick>` in <#974366490260279326>.\n"))
     
     @Cog.listener()
     async def on_user_update(self, pre, pos):

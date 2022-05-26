@@ -961,21 +961,19 @@ Note: Item names are case sensitive.
                 else:
                     if not self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"]:
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
-                            description=f"You've leveled up! Thanks for spending your time with us.\n"
-                                        f"You are now level {new_level}! Have a headpat.\n"
+                            description=f"You've leveled up to level {new_level}!\n"
                                         f"{'You earned the '+reward.mention+' role!'+newline if reward else ''}"
                                         f"\n"
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"
                                         f"Total Cumulative EXP: 🐾 {full_cumulative_exp}\n"
-                                        f"*Tip: You can hide this message in the future by going to <#740671751293501592> and typing `k!lp_levelup`.*"
+                                        f"*Tip: You can hide this message in the future by going to <#974366490260279326> and typing `k!lp_levelup`.*"
                             ).set_footer(text=f"You are {remaining_exp_to_next} EXP away from the next level. UID: {msg.author.id}"
                             ).set_image(url=choice(self.level_up_gifs)))
 
                         self.bot.user_data["UserData"][str(msg.author.id)]["Settings"]["NotificationsDue"]["LevelupMinimizeTip"] = True
                     else:
                         await msg.channel.send(content=msg.author.mention, embed=Embed(
-                            description=f"You've leveled up! Thanks for spending your time with us.\n"
-                                        f"You are now level {new_level}! Have a headpat.\n"
+                            description=f"You've leveled up to level {new_level}!\n"
                                         f"{'You earned the '+reward.mention+' role!'+newline if reward else ''}"
                                         f"\n"
                                         f"Current Spending EXP: 💳 {full_spending_exp}\n"

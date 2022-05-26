@@ -95,7 +95,7 @@ class BackgroundTasks(Cog):
    
     @loop(hours=3)
     async def disboard_reminder(self):
-        bot_spam = await self.bot.fetch_channel(740671751293501592)
+        bot_spam = await self.bot.fetch_channel(974366490260279326)
         await bot_spam.send(embed=Embed(
             color=0x24b7b7,
             title="DISBOARD Reminder",

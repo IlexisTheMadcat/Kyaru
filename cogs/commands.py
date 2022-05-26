@@ -332,7 +332,7 @@ class Commands(Cog):
         
     @command()
     async def nick(self, ctx, *, new_name=None):
-        if ctx.channel.id != 740671751293501592:  #🤖bot-spam
+        if ctx.channel.id != 974366490260279326:  #🤖bot-spam
             await ctx.message.delete()
             await ctx.author.send("That command cannot be used here.", delete_after=5)
             return
